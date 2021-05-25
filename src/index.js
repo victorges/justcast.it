@@ -21,6 +21,7 @@ const path = require("path");
 const app = express();
 
 const WebSocket = require("ws");
+const { createStream } = require('./livepeer');
 
 const CWD = process.cwd();
 
@@ -53,6 +54,8 @@ const wss = new WebSocket.Server({
 
 wss.on("connection", function connection(ws, req) {
   console.error("wss", "connection", req.url);
+
+  // createStream().then(result => console.log(result))
 
   function _send(data) {
     send(ws, data);
