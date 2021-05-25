@@ -9,7 +9,9 @@
     "test": "mocha test/index.test.js --exit",
     "system-test": "NAME=Cloud mocha test/system.test.js --timeout=180000",
     "lint": "eslint '**/*.js'",
-    "fix": "eslint --fix '**/*.js'"
+    "fix": "eslint --fix '**/*.js'",
+    "publish": "gcloud builds submit --tag gcr.io/justcast-it/justcast-it",
+    "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4"
   },
   "engines": {
     "node": ">= 12.0.0"
