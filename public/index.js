@@ -154,8 +154,8 @@ function connect() {
 
     _playbackId = playbackId;
 
-    playbackUrl.innerText = `${protocol}//${hostname}:${port}/${playbackId}`
-    playbackUrl.style.opacity = '1'
+    playbackUrl.innerText = `${protocol}//${hostname}:${port}/${playbackId}`;
+    playbackUrl.style.opacity = "1";
   });
 
   socket.addEventListener("error", (event) => {
@@ -211,5 +211,7 @@ if (transmitter) {
       console.log("navigator", "mediaDevices", "err", err);
     });
 } else {
-  video.src = "";
+  const playbackId = pathname.substr(1);
+  const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`;
+  video.src = playbackUrl;
 }
