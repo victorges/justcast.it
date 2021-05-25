@@ -199,7 +199,7 @@ if (transmitter) {
   connect()
 
   navigator.mediaDevices
-    .getUserMedia({ video: true, audio: false })
+    .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       _stream = stream
       video.srcObject = stream
