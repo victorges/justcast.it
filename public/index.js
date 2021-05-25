@@ -132,7 +132,13 @@ function connect() {
 
   socket.addEventListener("close", function (event) {
     console.log("socket", "close");
+    
     connected = false;
+    connecting = false;
+
+    if (recording) {
+      stop_recording()
+    }
   });
 
   socket.addEventListener("message", (event) => {
