@@ -5,15 +5,15 @@ const http = axios.create({
   baseURL: 'https://livepeer.com/api',
   responseType: 'json',
   headers: {
-    Authorization: `Bearer ${apiToken}`
-  }
+    Authorization: `Bearer ${apiToken}`,
+  },
 })
 
 const defaultProfiles = [
   { name: '240p0', fps: 0, bitrate: 250000, width: 426, height: 240 },
-  { name: '360p0', fps: 0, bitrate: 800000, width: 640, height: 360 }, 
-  { name: "480p0", fps: 0, bitrate: 1600000, width: 854, height: 480 }, 
-  { name: '720p0', fps: 0, bitrate: 3000000, width: 1280, height: 720 }
+  { name: '360p0', fps: 0, bitrate: 800000, width: 640, height: 360 },
+  { name: '480p0', fps: 0, bitrate: 1600000, width: 854, height: 480 },
+  { name: '720p0', fps: 0, bitrate: 3000000, width: 1280, height: 720 },
 ]
 
 async function createStream() {
@@ -21,7 +21,7 @@ async function createStream() {
   const name = `justcast-it-${ts}`
   const payload = {
     name,
-    profiles: defaultProfiles
+    profiles: defaultProfiles,
   }
   const response = await http.post('/stream', payload)
   const { id, streamKey, playbackId } = response.data
@@ -33,10 +33,10 @@ async function createStream() {
   }
 }
 
-const playbackUrl = (playbackId) => 
+const playbackUrl = (playbackId) =>
   `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
 
 module.exports = {
   createStream,
-  playbackUrl
+  playbackUrl,
 }
