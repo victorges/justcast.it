@@ -5,7 +5,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node src/index.js",
     "test": "mocha test/index.test.js --exit",
     "system-test": "NAME=Cloud mocha test/system.test.js --timeout=180000",
     "lint": "eslint '**/*.js'",
