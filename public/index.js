@@ -76,9 +76,16 @@ const localhost = isLocalHost(hostname) || isIp(hostname);
 
 const secure = protocol === "https:";
 
+const transmitter = pathname === "/";
+const receiver = !transmitter;
+
 let socket = null;
 let connected = false;
 let connecting = false;
+
+let _stream = null;
+
+let recording = false;
 
 function send(data) {
   if (!connected) {
@@ -102,7 +109,6 @@ function connect() {
       url = `ws://${hostname}:8080`;
     }
   }
-  
 
   console.log("socket", "url", url);
 
@@ -110,11 +116,18 @@ function connect() {
 
   socket.addEventListener("open", function (event) {
     console.log("socket", "open");
+
     connected = true;
+    connecting = false;
+
     send({
       type: "init",
       data: {},
     });
+
+    if (_stream) {
+      start_recording(_stream);
+    }
   });
 
   socket.addEventListener("close", function (event) {
@@ -151,14 +164,48 @@ function disconnect() {
   socket = null;
 }
 
-navigator.mediaDevices
-  .getUserMedia({ video: true, audio: false })
-  .then((stream) => {
-    video.srcObject = stream;
-    video.play();
-  })
-  .catch((err) => {
-    console.log("navigator", "mediaDevices", "err", err);
+let media_recorder = null;
+
+function start_recording(stream) {
+  console.log("start_recording", stream);
+  recording = true;
+
+  media_recorder = new MediaRecorder(stream, {
+    mimeType: "video/webm;codecs=h264",
+    videoBitsPerSecond: 3 * 1024 * 1024,
   });
 
-connect();
+  media_recorder.ondataavailable = function (event) {
+    const { data } = event;
+    socket.send(data);
+  };
+
+  media_recorder.start(1000);
+}
+
+function stop_recording() {
+  recording = false;
+
+  media_recorder.stop();
+}
+
+if (transmitter) {
+  connect();
+
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: false })
+    .then((stream) => {
+      _stream = stream;
+      video.srcObject = stream;
+      video.play();
+
+      if (connected) {
+        start_recording(stream);
+      }
+    })
+    .catch((err) => {
+      console.log("navigator", "mediaDevices", "err", err);
+    });
+} else {
+  video.src = "";
+}

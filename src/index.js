@@ -57,21 +57,7 @@ wss.on("connection", function connection(ws, req) {
   }
 
   ws.on("message", function incoming(message) {
-    const data_str = message.toString();
-
-    try {
-      const _data = JSON.parse(data_str);
-
-      const { type, data } = _data;
-
-      switch (type) {
-        case "init": {
-          break;
-        }
-      }
-    } catch (err) {
-      console.error("wss", "message", "failed to parse JSON", data_str);
-    }
+    
   });
 
   ws.on("close", () => {});
