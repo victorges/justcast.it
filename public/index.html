@@ -34,10 +34,27 @@
         /* border: 1px solid #dddddd; */
         /* box-sizing: border-box; */
       }
+
+      #playbackUrl {
+        position: absolute;
+        width: fit-content;
+        background: #000000aa;
+        color: #dddddd;
+        opacity: 0;
+        font-family: monospace;
+        top: 15px;
+        left: 50%;
+        font-size: 24px;
+        padding: 12px;
+        border-radius: 6px;
+        transition: opacity 0.2s linear;
+        transform: translateX(-50%);
+      }
     </style>
   </head>
   <body>
     <video id="video"></video>
+    <div id="playbackUrl"></div>
   </body>
   <script src="./index.js"></script>
 </html>

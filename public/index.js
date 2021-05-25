@@ -61,12 +61,13 @@ isIp.v6 = (str) => ip.v6({ exact: true }).test(str);
 isIp.version = (str) => (isIp(str) ? (isIp.v4(str) ? 4 : 6) : undefined);
 
 const video = document.getElementById("video");
+const playbackUrl = document.getElementById("playbackUrl");
 
 if (window.location !== window.parent.location) {
   canvas.style.background = "none transparent";
 }
 
-const { hostname, pathname, protocol } = location;
+const { hostname, pathname, port, protocol } = location;
 
 console.log("protocol", protocol);
 console.log("hostname", hostname);
@@ -86,6 +87,8 @@ let connecting = false;
 let _stream = null;
 
 let recording = false;
+
+let _playbackId = null;
 
 function send(data) {
   if (!connected) {
@@ -132,12 +135,12 @@ function connect() {
 
   socket.addEventListener("close", function (event) {
     console.log("socket", "close");
-    
+
     connected = false;
     connecting = false;
 
     if (recording) {
-      stop_recording()
+      stop_recording();
     }
   });
 
@@ -147,17 +150,12 @@ function connect() {
 
     console.log("socket", "message", data);
 
-    const { type, data: _data } = data;
+    const { playbackId } = data;
 
-    switch (type) {
-      case "init": {
-        const {} = _data;
+    _playbackId = playbackId;
 
-        break;
-      }
-      default:
-        break;
-    }
+    playbackUrl.innerText = `${protocol}//${hostname}:${port}/${playbackId}`
+    playbackUrl.style.opacity = '1'
   });
 
   socket.addEventListener("error", (event) => {
