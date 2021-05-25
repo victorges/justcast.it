@@ -63,6 +63,8 @@ isIp.version = (str) => (isIp(str) ? (isIp.v4(str) ? 4 : 6) : undefined)
 const video = document.getElementById('video')
 const playbackUrl = document.getElementById('playbackUrl')
 
+const player = videojs(video)
+
 if (window.location !== window.parent.location) {
   canvas.style.background = 'none transparent'
 }
@@ -213,5 +215,9 @@ if (transmitter) {
 } else {
   const playbackId = pathname.substr(1)
   const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
-  video.src = playbackUrl
+  const sourceEl = document.createElement('source')
+  sourceEl.setAttribute('type', 'application/x-mpegURL')
+  sourceEl.src = playbackUrl
+  video.appendChild(sourceEl)
+  // video.src = playbackUrl
 }
