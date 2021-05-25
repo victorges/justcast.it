@@ -14,18 +14,55 @@
 
 // [START cloudrun_helloworld_service]
 // [START run_helloworld_service]
-const express = require('express');
+const express = require("express");
 const app = express();
 
-app.get('/', (req, res) => {
-  const name = process.env.NAME || 'World';
-  res.send(`Hello ${name}!`);
-});
+const WebSocket = require("ws");
+
+app.use(express.static("public"));
 
 const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log(`helloworld: listening on port ${port}`);
+const server = app.listen(port, () => {
+  console.log(`listening on port ${port}`);
 });
+
+const wss = new WebSocket.Server({
+  server,
+  path: '/'
+});
+
+wss.on("connection", function connection(ws, req) {
+  console.error("wss", "connection");
+
+  function _send(data) {
+    send(ws, data);
+  }
+
+  ws.on("message", function incoming(message) {
+    const data_str = message.toString();
+
+    try {
+      const _data = JSON.parse(data_str);
+
+      const { type, data } = _data;
+
+      switch (type) {
+        case "init": {
+          break;
+        }
+      }
+    } catch (err) {
+      console.error("wss", "message", "failed to parse JSON", data_str);
+    }
+  });
+
+  ws.on("close", () => {});
+});
+
+wss.on("close", function close() {
+  console.log("wss", "close");
+});
+
 // [END run_helloworld_service]
 // [END cloudrun_helloworld_service]
 
