@@ -52,14 +52,15 @@ const wss = new WebSocket.Server({
   path: "/",
 });
 
-wss.on("connection", function connection(ws, req) {
+wss.on("connection", async function connection(ws, req) {
   console.error("wss", "connection", req.url);
-
-  // createStream().then(result => console.log(result))
 
   function _send(data) {
     send(ws, data);
   }
+
+  const { playbackId } = await createStream()
+  ws.send(JSON.stringify({ playbackId }))
 
   ws.on("message", function incoming(message) {
     
