@@ -16,6 +16,7 @@
 // [START run_helloworld_service]
 require('dotenv').config()
 
+const child_process = require('child_process');
 const express = require("express");
 const path = require("path");
 const app = express();
@@ -52,21 +53,49 @@ const wss = new WebSocket.Server({
   path: "/",
 });
 
+const logTs = () => new Date().toISOString()
+
 wss.on("connection", async function connection(ws, req) {
   console.error("wss", "connection", req.url);
 
-  function _send(data) {
-    send(ws, data);
-  }
-
-  const { playbackId } = await createStream()
+  const { playbackId, streamUrl, streamId } = await createStream()
   ws.send(JSON.stringify({ playbackId }))
 
-  ws.on("message", function incoming(message) {
-    
+  const log = {
+    info: (msg) => console.log(`[${logTs()}][stream ${streamId}] ${msg}`),
+    err: (msg) => console.error(`[${logTs()}][stream ${streamId}] ${msg}`)
+  }
+
+  log.info(`Target RTMP URL: ${streamUrl}`)
+
+  const ffmpeg = child_process.spawn('ffmpeg', [
+    '-i', '-',
+    '-vcodec', 'copy',
+    '-acodec', 'aac',
+    '-f', 'flv',
+    streamUrl
+  ])
+
+  ffmpeg.on('close', (code, signal) => {
+    log.err(`FFmpeg closed with code ${code} and signal ${signal}`)
+    ws.terminate()
+  })
+
+  ffmpeg.stdin.on('error', (e) => {
+    log.err(`FFmpeg STDIN Error: ${e}`);
   });
 
-  ws.on("close", () => {});
+  ffmpeg.stderr.on('data', (data) => {
+    log.err(`FFmpeg STDERR: ${data.toString()}`);
+  });
+
+  ws.on('message', (msg) => {
+    ffmpeg.stdin.write(msg);
+  });
+
+  ws.on('close', () => {
+    ffmpeg.kill('SIGINT');
+  });
 });
 
 wss.on("close", function close() {
