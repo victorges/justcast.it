@@ -19,6 +19,11 @@
 # https://hub.docker.com/_/node
 FROM node:14-slim
 
+RUN apt update && \
+  apt install -y ffmpeg && \
+  apt clean && apt autoclean
+RUN ffmpeg -version
+
 # Create and change to the app directory.
 WORKDIR /usr/src/app
 
