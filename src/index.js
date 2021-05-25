@@ -54,18 +54,13 @@ const wss = new WebSocket.Server({
 
 const logTs = () => new Date().toISOString()
 
-wss.on('connection', async function connection(ws, req) {
-  console.error('wss', 'connection', req.url)
-
-  const { playbackId, streamUrl, streamId } = await createStream()
-  ws.send(JSON.stringify({ playbackId }))
-
+function pipeWsToRtmp(ws, info) {
+  const { streamId, streamUrl } = info
   const log = {
     info: (msg) => console.log(`[${logTs()}][stream ${streamId}] ${msg}`),
     err: (msg) => console.error(`[${logTs()}][stream ${streamId}] ${msg}`),
   }
-
-  log.info(`Target RTMP URL: ${streamUrl}`)
+  log.info(`Piping ws through ffmpeg to stream: ${JSON.stringify(info)}`)
 
   const ffmpeg = child_process.spawn('ffmpeg', [
     '-i',
@@ -81,7 +76,7 @@ wss.on('connection', async function connection(ws, req) {
 
   ffmpeg.on('close', (code, signal) => {
     log.err(`FFmpeg closed with code ${code} and signal ${signal}`)
-    ws.terminate()
+    ws.close(1011, `ffmpeg exited with code ${code}`)
   })
 
   ffmpeg.stdin.on('error', (e) => {
@@ -99,6 +94,15 @@ wss.on('connection', async function connection(ws, req) {
   ws.on('close', () => {
     ffmpeg.kill('SIGINT')
   })
+}
+
+wss.on('connection', async function connection(ws, req) {
+  console.error('wss', 'connection', req.url)
+
+  const info = await createStream()
+  ws.send(JSON.stringify({ playbackId: info.playbackId }))
+
+  pipeWsToRtmp(ws, info)
 })
 
 wss.on('close', function close() {
