@@ -292,9 +292,4 @@ if (transmitter) {
     type: 'application/x-mpegURL',
     withCredentials: false,
   })
-  player.qualityLevels()
-  player.controlBar.addChild('QualitySelector')
-  // player.hlsQualitySelector({
-  //   displayCurrentQuality: true,
-  // })
 }
