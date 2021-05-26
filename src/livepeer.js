@@ -1,8 +1,20 @@
-const {Firestore} = require('@google-cloud/firestore');
-const firestore = new Firestore();
+const { Firestore } = require('@google-cloud/firestore')
+const firestore = new Firestore()
 const streamsRef = firestore.collection('justcast-streams')
 
 const axios = require('axios').default
+
+const {
+  uniqueNamesGenerator,
+  adjectives,
+  animals,
+  names,
+} = require('unique-names-generator')
+const config = {
+  dictionaries: [adjectives, animals, names],
+  separator: '-',
+}
+const humanIdGen = () => uniqueNamesGenerator(config).toLowerCase()
 
 const apiToken = process.env['LIVEPEER_API_TOKEN']
 const http = axios.create({
@@ -39,8 +51,8 @@ const defaultProfiles = [
 ]
 
 async function createStream() {
-  const ts = new Date().toISOString()
-  const name = `justcast-it-${ts}`
+  const hid = humanIdGen()
+  const name = `justcast-it-${hid}`
   const payload = {
     name,
     profiles: defaultProfiles,
