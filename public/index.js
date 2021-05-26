@@ -162,10 +162,6 @@ function connect() {
       type: 'init',
       data: {},
     })
-
-    if (_stream) {
-      start_recording(_stream)
-    }
   })
 
   socket.addEventListener('close', function (event) {
