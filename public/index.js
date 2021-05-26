@@ -215,9 +215,9 @@ if (transmitter) {
 } else {
   const playbackId = pathname.substr(1)
   const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
-  const sourceEl = document.createElement('source')
-  sourceEl.setAttribute('type', 'application/x-mpegURL')
-  sourceEl.src = playbackUrl
-  video.appendChild(sourceEl)
-  // video.src = playbackUrl
+  player.src({
+    src: playbackUrl,
+    type: 'application/x-mpegURL',
+    withCredentials: false,
+  })
 }

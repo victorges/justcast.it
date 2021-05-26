@@ -6,12 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>justcast.it</title>
 
-    <link
-      href="https://unpkg.com/video.js/dist/video-js.css"
-      rel="stylesheet"
-    />
-    <script src="https://unpkg.com/video.js/dist/video.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-hls.js@3.2.0/dist/videojs-contrib-hlsjs.min.js"></script>
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
 
     <style>
       body {
@@ -62,6 +57,8 @@
   <body>
     <video id="video" class="video-js vjs-default-skin" controls="true"></video>
     <div id="playbackUrl"></div>
+    <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
+    <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
   </body>
   <script src="./index.js"></script>
 </html>
