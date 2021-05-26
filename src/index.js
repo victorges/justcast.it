@@ -8,6 +8,7 @@ const app = express()
 const WebSocket = require('ws')
 const ffmpeg = require('./ffmpeg')
 const livepeer = require('./livepeer')
+const streamstore = require('./streamstore')
 
 const CWD = process.cwd()
 
@@ -39,18 +40,30 @@ const wss = new WebSocket.Server({
 
 const streamIdCookieName = 'JustCastId'
 
+async function getOrCreateStream(prevStreamId) {
+  const setCookie = {}
+  if (prevStreamId) {
+    const info = await streamstore.getByStreamId(prevStreamId)
+    return { info, setCookie }
+  }
+
+  const info = await livepeer.createStream()
+  await streamstore.create(info.humanId, info)
+
+  setCookie[streamIdCookieName] = info.streamId
+  return { info, setCookie }
+}
+
 wss.on('connection', async function connection(ws, req) {
   console.error('wss', 'connection', req.url)
 
   const cookies = cookie.parse(req.headers.cookie ?? '')
-  const prevStream = cookies[streamIdCookieName]
-  const info = prevStream
-    ? await livepeer.getStream(prevStream)
-    : await livepeer.createStream()
+  const prevStreamId = cookies[streamIdCookieName]
+  let { info, setCookie } = await getOrCreateStream(prevStreamId)
 
   const handshake = {
     playbackId: info.playbackId,
-    setCookie: prevStream ? {} : { [streamIdCookieName]: info.streamId },
+    setCookie,
   }
   ws.send(JSON.stringify(handshake))
 

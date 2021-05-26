@@ -1,5 +1,4 @@
 const axios = require('axios').default
-const streamstore = require('./streamstore')
 
 const {
   uniqueNamesGenerator,
@@ -7,11 +6,11 @@ const {
   animals,
   names,
 } = require('unique-names-generator')
-const config = {
+const hidConfig = {
   dictionaries: [adjectives, animals, names],
   separator: '-',
 }
-const humanIdGen = () => uniqueNamesGenerator(config).toLowerCase()
+const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
 
 const apiToken = process.env['LIVEPEER_API_TOKEN']
 const http = axios.create({
@@ -56,7 +55,6 @@ async function createStream() {
   }
   const response = await http.post('/stream', payload)
   const info = streamObjToInfo(humanId, response.data)
-  await streamstore.create(humanId, info)
   return info
 }
 

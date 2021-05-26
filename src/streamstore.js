@@ -3,9 +3,17 @@ const firestore = new Firestore()
 
 const collectionRef = firestore.collection('justcast-streams')
 
-async function get(humanId) {
+async function getByHumanId(humanId) {
   const doc = await collectionRef.doc(humanId).get()
   return doc.data()
+}
+
+async function getByStreamId(streamId) {
+  const list = await collectionRef.where('streamId', '==', streamId).get()
+  if (list.size != 1) {
+    return undefined
+  }
+  return list.docs[0].data()
 }
 
 async function create(humanId, data) {
@@ -13,6 +21,7 @@ async function create(humanId, data) {
 }
 
 module.exports = {
-  get,
+  getByHumanId,
+  getByStreamId,
   create
 }
