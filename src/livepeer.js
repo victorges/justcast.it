@@ -22,6 +22,7 @@ async function createStream() {
   const payload = {
     name,
     profiles: defaultProfiles,
+    record: true,
   }
   const response = await http.post('/stream', payload)
   const { id, streamKey, playbackId } = response.data
