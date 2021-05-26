@@ -224,6 +224,7 @@ function start_recording(stream) {
   media_recorder.start(1000)
 
   record.style.background = '#dd0000'
+  video.style.opacity = 1
   playbackUrl.classList.add('visible')
 
   record_flash_interval = setInterval(() => {
@@ -243,8 +244,8 @@ function stop_recording() {
   media_recorder.stop()
 
   record.style.opacity = 1
-
   record.style.background = '#dddddd'
+  video.style.opacity = 0.5
 
   clearInterval(record_flash_interval)
 }
