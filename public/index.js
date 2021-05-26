@@ -165,7 +165,7 @@ function connect() {
   })
 
   socket.addEventListener('close', function (event) {
-    console.log('socket', 'close')
+    console.log('socket', 'close', event)
 
     connected = false
     connecting = false
