@@ -19,6 +19,7 @@
   "author": "Neolag Fresh Ventures",
   "license": "Apache-2.0",
   "dependencies": {
+    "@google-cloud/firestore": "^4.12.0",
     "axios": "^0.21.1",
     "cookie": "^0.4.1",
     "dotenv": "^10.0.0",

@@ -1,3 +1,7 @@
+const {Firestore} = require('@google-cloud/firestore');
+const firestore = new Firestore();
+const streamsRef = firestore.collection('justcast-streams')
+
 const axios = require('axios').default
 
 const apiToken = process.env['LIVEPEER_API_TOKEN']
@@ -20,6 +24,9 @@ const streamObjToInfo = ({ id, streamKey, playbackId }) => ({
 })
 
 async function getStream(id) {
+  const doc = await streamsRef.doc('dummy-brown-donkey').get()
+  console.log('donkey has id', doc.get('id'))
+
   const response = await http.get(`/stream/${id}`)
   return streamObjToInfo(response.data)
 }
