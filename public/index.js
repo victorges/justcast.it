@@ -278,10 +278,15 @@ if (transmitter) {
     }
   }
 } else {
+  video.style.transition = ''
+  video.style.opacity = 1
+
   player.volume(1)
   player.controls(true)
+
   const playbackId = pathname.substr(1)
   const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
+  
   player.src({
     src: playbackUrl,
     type: 'application/x-mpegURL',
