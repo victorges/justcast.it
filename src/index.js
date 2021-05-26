@@ -16,13 +16,13 @@
 // [START run_helloworld_service]
 require('dotenv').config()
 
-const child_process = require('child_process')
 const express = require('express')
 const path = require('path')
 const app = express()
 
 const WebSocket = require('ws')
-const { createStream } = require('./livepeer')
+const ffmpeg = require('./ffmpeg')
+const livepeer = require('./livepeer')
 
 const CWD = process.cwd()
 
@@ -52,57 +52,13 @@ const wss = new WebSocket.Server({
   path: '/',
 })
 
-const logTs = () => new Date().toISOString()
-
-function pipeWsToRtmp(ws, info) {
-  const { streamId, streamUrl } = info
-  const log = {
-    info: (msg) => console.log(`[${logTs()}][stream ${streamId}] ${msg}`),
-    err: (msg) => console.error(`[${logTs()}][stream ${streamId}] ${msg}`),
-  }
-  log.info(`Piping ws through ffmpeg to stream: ${JSON.stringify(info)}`)
-
-  const ffmpeg = child_process.spawn('ffmpeg', [
-    '-i',
-    '-',
-    '-vcodec',
-    'copy',
-    '-acodec',
-    'aac',
-    '-f',
-    'flv',
-    streamUrl,
-  ])
-
-  ffmpeg.on('close', (code, signal) => {
-    log.err(`FFmpeg closed with code ${code} and signal ${signal}`)
-    ws.close(1011, `ffmpeg exited with code ${code}`)
-  })
-
-  ffmpeg.stdin.on('error', (e) => {
-    log.err(`FFmpeg STDIN Error: ${e}`)
-  })
-
-  ffmpeg.stderr.on('data', (data) => {
-    log.err(`FFmpeg STDERR: ${data.toString()}`)
-  })
-
-  ws.on('message', (msg) => {
-    ffmpeg.stdin.write(msg)
-  })
-
-  ws.on('close', () => {
-    ffmpeg.kill('SIGINT')
-  })
-}
-
 wss.on('connection', async function connection(ws, req) {
   console.error('wss', 'connection', req.url)
 
-  const info = await createStream()
+  const info = await livepeer.createStream()
   ws.send(JSON.stringify({ playbackId: info.playbackId }))
 
-  pipeWsToRtmp(ws, info)
+  ffmpeg.pipeWsToRtmp(ws, info)
 })
 
 wss.on('close', function close() {
