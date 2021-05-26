@@ -156,7 +156,9 @@ function connect() {
 
     _playbackId = playbackId
 
-    playbackUrl.innerText = `${protocol}//${hostname}:${port}/${playbackId}`
+    playbackUrl.innerText = `${protocol}//${hostname}${
+      localhost ? `:${port}` : ''
+    }/${playbackId}`
     playbackUrl.style.opacity = '1'
   })
 
