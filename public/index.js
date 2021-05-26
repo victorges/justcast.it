@@ -198,14 +198,17 @@ function stop_recording() {
 }
 
 if (transmitter) {
+  player.volume(0)
+
   connect()
 
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       _stream = stream
+      
+      const video = player.tech().el()
       video.srcObject = stream
-      video.play()
 
       if (connected) {
         start_recording(stream)
@@ -215,6 +218,8 @@ if (transmitter) {
       console.log('navigator', 'mediaDevices', 'err', err)
     })
 } else {
+  player.volume(1)
+  player.controls(true)
   const playbackId = pathname.substr(1)
   const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
   player.src({

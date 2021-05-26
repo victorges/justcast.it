@@ -52,10 +52,22 @@
         transition: opacity 0.2s linear;
         transform: translateX(-50%);
       }
+
+      .vjs-big-play-button {
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+      }
     </style>
   </head>
   <body>
-    <video id="video" class="video-js vjs-default-skin" controls="true"></video>
+    <video
+      id="video"
+      class="video-js vjs-default-skin"
+      autoplay
+      data-setup='{ "controls": false, "autoplay": true, "preload": "auto" }'
+    ></video>
     <div id="playbackUrl"></div>
     <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
     <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
