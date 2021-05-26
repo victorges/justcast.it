@@ -7,20 +7,8 @@ const app = express()
 
 const WebSocket = require('ws')
 const ffmpeg = require('./ffmpeg')
-const livepeer = require('./livepeer')
 const streamstore = require('./streamstore')
-
-const {
-  uniqueNamesGenerator,
-  adjectives,
-  animals,
-  names,
-} = require('unique-names-generator')
-const hidConfig = {
-  dictionaries: [adjectives, animals, names],
-  separator: '-',
-}
-const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
+const { getOrCreateStream } = require('./streams')
 
 const CWD = process.cwd()
 
@@ -62,39 +50,18 @@ const wss = new WebSocket.Server({
 
 const streamIdCookieName = 'JustCastId'
 
-async function getOrCreateStream(prevStreamId) {
-  const setCookie = {}
-  if (prevStreamId) {
-    const info = await streamstore.getByStreamId(prevStreamId)
-    if (info) {
-      return { info, setCookie }
-    }
-  }
-
-  const humanId = humanIdGen()
-  const lpInfo = prevStreamId
-    ? await livepeer.getStream(prevStreamId)
-    : await livepeer.createStream(`justcast-it-${humanId}`)
-  const info = { ...lpInfo, humanId }
-  await streamstore.create(humanId, info)
-
-  if (!prevStreamId) {
-    setCookie[streamIdCookieName] = info.streamId
-  }
-  return { info, setCookie }
-}
-
 wss.on('connection', async function connection(ws, req) {
   console.error('wss', 'connection', req.url)
 
   const cookies = cookie.parse(req.headers.cookie ?? '')
   const prevStreamId = cookies[streamIdCookieName]
-  let { info, setCookie } = await getOrCreateStream(prevStreamId)
+  const info = await getOrCreateStream(prevStreamId)
 
+  const setCookie = prevStreamId ? {} : { [streamIdCookieName]: info.streamId }
   const handshake = {
     humanId: info.humanId,
     playbackId: info.playbackId,
-    setCookie,
+    setCookie
   }
   ws.send(JSON.stringify(handshake))
 
