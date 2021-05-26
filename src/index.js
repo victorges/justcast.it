@@ -12,6 +12,18 @@ const streamstore = require('./streamstore')
 
 const CWD = process.cwd()
 
+app.get('/api/stream/:humanId', async (req, res) => {
+  const id = req.params.humanId
+  const info = await streamstore.getByHumanId(id)
+  if (!info) {
+    res.sendStatus(404)
+    return
+  }
+
+  const { humanId, playbackId, playbackUrl } = info
+  res.json({ humanId, playbackId, playbackUrl })
+})
+
 app.get('*', (req, res) => {
   const { url } = req
   const url_segments = url.split('/')
@@ -25,8 +37,6 @@ app.get('*', (req, res) => {
   const file_path = path.join(CWD, 'public', file_name)
   res.sendFile(file_path)
 })
-
-// app.use(express.static("public"));
 
 const port = process.env.PORT || 8080
 const server = app.listen(port, () => {
