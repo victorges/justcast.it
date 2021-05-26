@@ -181,7 +181,7 @@ function connect() {
 
     console.log('socket', 'message', data)
 
-    const { playbackId, setCookie } = data
+    const { playbackId, humanId, setCookie } = data
 
     for (const name in setCookie) {
       document.cookie = `${name}=${setCookie[name]}`
@@ -190,7 +190,7 @@ function connect() {
 
     playbackUrl.innerText = `${protocol}//${hostname}${
       localhost ? `:${port}` : ''
-    }/${playbackId}`
+    }/${humanId || playbackId}`
     if (recording) {
       playbackUrl.classList.add('visible')
     }

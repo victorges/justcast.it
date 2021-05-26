@@ -72,6 +72,7 @@ wss.on('connection', async function connection(ws, req) {
   let { info, setCookie } = await getOrCreateStream(prevStreamId)
 
   const handshake = {
+    humanId: info.humanId,
     playbackId: info.playbackId,
     setCookie,
   }
