@@ -244,6 +244,8 @@ function stop_recording() {
 
   media_recorder.stop()
 
+  record.style.opacity = 1
+
   record.style.background = '#dddddd'
 
   clearInterval(record_flash_interval)
