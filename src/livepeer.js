@@ -1,8 +1,5 @@
-const { Firestore } = require('@google-cloud/firestore')
-const firestore = new Firestore()
-const streamsRef = firestore.collection('justcast-streams')
-
 const axios = require('axios').default
+const streamstore = require('./streamstore')
 
 const {
   uniqueNamesGenerator,
@@ -28,7 +25,8 @@ const http = axios.create({
 const playbackUrl = (playbackId) =>
   `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
 
-const streamObjToInfo = ({ id, streamKey, playbackId }) => ({
+const streamObjToInfo = (humanId, { id, streamKey, playbackId }) => ({
+  humanId,
   streamId: id,
   streamUrl: `rtmp://rtmp.livepeer.com/live/${streamKey}`,
   playbackId,
@@ -36,11 +34,11 @@ const streamObjToInfo = ({ id, streamKey, playbackId }) => ({
 })
 
 async function getStream(id) {
-  const doc = await streamsRef.doc('dummy-brown-donkey').get()
-  console.log('donkey has id', doc.get('id'))
+  const doc = await streamstore.get('dummy-brown-donkey')
+  console.log('donkey has id', doc?.id)
 
   const response = await http.get(`/stream/${id}`)
-  return streamObjToInfo(response.data)
+  return streamObjToInfo(id, response.data)
 }
 
 const defaultProfiles = [
@@ -51,14 +49,15 @@ const defaultProfiles = [
 ]
 
 async function createStream() {
-  const hid = humanIdGen()
-  const name = `justcast-it-${hid}`
+  const humanId = humanIdGen()
   const payload = {
-    name,
+    name: `justcast-it-${humanId}`,
     profiles: defaultProfiles,
   }
   const response = await http.post('/stream', payload)
-  return streamObjToInfo(response.data)
+  const info = streamObjToInfo(humanId, response.data)
+  await streamstore.create(humanId, info)
+  return info
 }
 
 module.exports = {
