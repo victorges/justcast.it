@@ -251,8 +251,9 @@ function stop_recording() {
 }
 
 if (transmitter) {
+  video.style.opacity = 0.5
+  video.style.transition = 'opacity 0.2s linear'
   player.volume(0)
-
   connect()
 
   navigator.mediaDevices
@@ -278,9 +279,6 @@ if (transmitter) {
     }
   }
 } else {
-  video.style.transition = ''
-  video.style.opacity = 1
-
   player.volume(1)
   player.controls(true)
 
