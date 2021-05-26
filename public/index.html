@@ -7,6 +7,10 @@
     <title>justcast.it</title>
 
     <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+    <link
+      href="https://unpkg.com/@silvermine/videojs-quality-selector/dist/css/quality-selector.css"
+      rel="stylesheet"
+    />
 
     <style>
       body {
@@ -40,17 +44,31 @@
       #playbackUrl {
         position: absolute;
         width: fit-content;
-        background: #000000aa;
+        background: #222222;
         color: #dddddd;
         opacity: 0;
         font-family: monospace;
         top: 15px;
         left: 50%;
-        font-size: 24px;
-        padding: 12px;
+        font-size: 18px;
+        padding: 9px;
         border-radius: 6px;
         transition: opacity 0.2s linear;
         transform: translateX(-50%);
+        user-select: none;
+        cursor: pointer;
+      }
+
+      #playbackUrl.visible {
+        opacity: 0.75;
+      }
+
+      #playbackUrl:hover {
+        opacity: 1;
+      }
+
+      #playbackUrl:active {
+        background: #444444;
       }
 
       .vjs-big-play-button {
@@ -58,6 +76,51 @@
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
+        transition: opacity 0.2s linear, color 0.2s linear;
+      }
+
+      .controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .record-container {
+        display: none;
+        position: absolute;
+        /* top: 24px; */
+        /* right: 24px; */
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        background: #222222;
+        opacity: 0.2;
+        pointer-events: all;
+        transition: opacity 0.2s linear;
+      }
+
+      .record-container:hover {
+        opacity: 1;
+      }
+
+      .record {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        /* background: #dd0000; */
+        background: #dddddd;
+        cursor: pointer;
+        transition: opacity 0.2s linear, color 0.2s linear;
       }
     </style>
   </head>
@@ -68,9 +131,16 @@
       autoplay
       data-setup='{ "controls": false, "autoplay": true, "preload": "auto" }'
     ></video>
+    <div class="controls">
+      <div id="record-container" class="record-container">
+        <div id="record" class="record"></div>
+      </div>
+    </div>
     <div id="playbackUrl"></div>
     <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
     <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-quality-levels/2.1.0/videojs-contrib-quality-levels.min.js"></script>
+    <script src="https://unpkg.com/@silvermine/videojs-quality-selector/dist/js/silvermine-videojs-quality-selector.min.js"></script>
   </body>
   <script src="./index.js"></script>
 </html>

@@ -2,6 +2,32 @@ const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
 }
 
+// https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
+
+function copyToClipboard(text) {
+  if (window.clipboardData && window.clipboardData.setData) {
+    // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
+    return window.clipboardData.setData('Text', text)
+  } else if (
+    document.queryCommandSupported &&
+    document.queryCommandSupported('copy')
+  ) {
+    var textarea = document.createElement('textarea')
+    textarea.textContent = text
+    textarea.style.position = 'fixed' // Prevent scrolling to bottom of page in Microsoft Edge.
+    document.body.appendChild(textarea)
+    textarea.select()
+    try {
+      return document.execCommand('copy') // Security exception may be thrown by some browsers.
+    } catch (ex) {
+      console.warn('Copy to clipboard failed.', ex)
+      return false
+    } finally {
+      document.body.removeChild(textarea)
+    }
+  }
+}
+
 // https://github.com/sindresorhus/ip-regex/blob/main/index.js
 
 const word = '[a-fA-F\\d:]'
@@ -62,6 +88,13 @@ isIp.version = (str) => (isIp(str) ? (isIp.v4(str) ? 4 : 6) : undefined)
 
 const video = document.getElementById('video')
 const playbackUrl = document.getElementById('playbackUrl')
+
+const record_container = document.getElementById('record-container')
+const record = document.getElementById('record')
+
+playbackUrl.onclick = () => {
+  copyToClipboard(playbackUrl.innerText)
+}
 
 const player = videojs(video)
 
@@ -159,7 +192,8 @@ function connect() {
     playbackUrl.innerText = `${protocol}//${hostname}${
       localhost ? `:${port}` : ''
     }/${playbackId}`
-    playbackUrl.style.opacity = '1'
+
+    playbackUrl.classList.toggle('visible')
   })
 
   socket.addEventListener('error', (event) => {
@@ -174,8 +208,10 @@ function disconnect() {
 
 let media_recorder = null
 
+let record_frash_dim = false
+
 function start_recording(stream) {
-  console.log('start_recording', stream)
+  // console.log('start_recording', stream)
   recording = true
 
   media_recorder = new MediaRecorder(stream, {
@@ -189,12 +225,28 @@ function start_recording(stream) {
   }
 
   media_recorder.start(1000)
+
+  record.style.background = '#dd0000'
+
+  record_flash_interval = setInterval(() => {
+    record_frash_dim = !record_frash_dim
+
+    if (record_frash_dim) {
+      record.style.opacity = 0
+    } else {
+      record.style.opacity = 1
+    }
+  }, 1000)
 }
 
 function stop_recording() {
   recording = false
 
   media_recorder.stop()
+
+  record.style.background = '#dddddd'
+
+  clearInterval(record_flash_interval)
 }
 
 if (transmitter) {
@@ -206,17 +258,24 @@ if (transmitter) {
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       _stream = stream
-      
+
       const video = player.tech().el()
       video.srcObject = stream
-
-      if (connected) {
-        start_recording(stream)
-      }
     })
     .catch((err) => {
       console.log('navigator', 'mediaDevices', 'err', err)
     })
+
+  
+  record_container.style.display = 'block'
+
+  record_container.onclick = () => {
+    if (recording) {
+      stop_recording()
+    } else {
+      start_recording(_stream)
+    }
+  }
 } else {
   player.volume(1)
   player.controls(true)
@@ -227,4 +286,9 @@ if (transmitter) {
     type: 'application/x-mpegURL',
     withCredentials: false,
   })
+  player.qualityLevels()
+  player.controlBar.addChild('QualitySelector')
+  // player.hlsQualitySelector({
+  //   displayCurrentQuality: true,
+  // })
 }
