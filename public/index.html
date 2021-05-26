@@ -58,14 +58,16 @@
         transition: opacity 0.2s linear;
         transform: translateX(-50%);
         user-select: none;
-        cursor: pointer;
+        pointer-events: none;
       }
 
       #playbackUrl.visible {
         opacity: 0.75;
+        cursor: pointer;
+        pointer-events: all;
       }
 
-      #playbackUrl:hover {
+      #playbackUrl.visible:hover {
         opacity: 1;
       }
 
