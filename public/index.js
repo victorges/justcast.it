@@ -185,8 +185,11 @@ function connect() {
 
     console.log('socket', 'message', data)
 
-    const { playbackId } = data
+    const { playbackId, setCookie } = data
 
+    for (const name in setCookie) {
+      document.cookie = `${name}=${setCookie[name]}`
+    }
     _playbackId = playbackId
 
     playbackUrl.innerText = `${protocol}//${hostname}${
