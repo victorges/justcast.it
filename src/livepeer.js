@@ -1,17 +1,5 @@
 const axios = require('axios').default
 
-const {
-  uniqueNamesGenerator,
-  adjectives,
-  animals,
-  names,
-} = require('unique-names-generator')
-const hidConfig = {
-  dictionaries: [adjectives, animals, names],
-  separator: '-',
-}
-const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
-
 const apiToken = process.env['LIVEPEER_API_TOKEN']
 const http = axios.create({
   baseURL: 'https://livepeer.com/api',
@@ -24,8 +12,7 @@ const http = axios.create({
 const playbackUrl = (playbackId) =>
   `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
 
-const streamObjToInfo = (humanId, { id, streamKey, playbackId }) => ({
-  humanId,
+const streamObjToInfo = ({ id, streamKey, playbackId }) => ({
   streamId: id,
   streamUrl: `rtmp://rtmp.livepeer.com/live/${streamKey}`,
   playbackId,
@@ -33,11 +20,8 @@ const streamObjToInfo = (humanId, { id, streamKey, playbackId }) => ({
 })
 
 async function getStream(id) {
-  const doc = await streamstore.get('dummy-brown-donkey')
-  console.log('donkey has id', doc?.id)
-
   const response = await http.get(`/stream/${id}`)
-  return streamObjToInfo(id, response.data)
+  return streamObjToInfo(response.data)
 }
 
 const defaultProfiles = [
@@ -47,14 +31,13 @@ const defaultProfiles = [
   { name: '720p0', fps: 0, bitrate: 3000000, width: 1280, height: 720 },
 ]
 
-async function createStream() {
-  const humanId = humanIdGen()
+async function createStream(name) {
   const payload = {
-    name: `justcast-it-${humanId}`,
+    name,
     profiles: defaultProfiles,
   }
   const response = await http.post('/stream', payload)
-  const info = streamObjToInfo(humanId, response.data)
+  const info = streamObjToInfo(response.data)
   return info
 }
 

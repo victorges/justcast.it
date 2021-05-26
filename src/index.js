@@ -10,6 +10,18 @@ const ffmpeg = require('./ffmpeg')
 const livepeer = require('./livepeer')
 const streamstore = require('./streamstore')
 
+const {
+  uniqueNamesGenerator,
+  adjectives,
+  animals,
+  names,
+} = require('unique-names-generator')
+const hidConfig = {
+  dictionaries: [adjectives, animals, names],
+  separator: '-',
+}
+const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
+
 const CWD = process.cwd()
 
 app.get('/api/stream/:humanId', async (req, res) => {
@@ -54,13 +66,21 @@ async function getOrCreateStream(prevStreamId) {
   const setCookie = {}
   if (prevStreamId) {
     const info = await streamstore.getByStreamId(prevStreamId)
-    return { info, setCookie }
+    if (info) {
+      return { info, setCookie }
+    }
   }
 
-  const info = await livepeer.createStream()
-  await streamstore.create(info.humanId, info)
+  const humanId = humanIdGen()
+  const lpInfo = prevStreamId
+    ? await livepeer.getStream(prevStreamId)
+    : await livepeer.createStream(`justcast-it-${humanId}`)
+  const info = { ...lpInfo, humanId }
+  await streamstore.create(humanId, info)
 
-  setCookie[streamIdCookieName] = info.streamId
+  if (!prevStreamId) {
+    setCookie[streamIdCookieName] = info.streamId
+  }
   return { info, setCookie }
 }
 
