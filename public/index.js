@@ -273,7 +273,6 @@ if (transmitter) {
       console.log('navigator', 'mediaDevices', 'err', err)
     })
 
-  
   record_container.style.display = 'block'
 
   record_container.onclick = () => {
@@ -287,12 +286,20 @@ if (transmitter) {
   player.volume(1)
   player.controls(true)
 
-  const playbackId = pathname.substr(1)
-  const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
-  
-  player.src({
-    src: playbackUrl,
-    type: 'application/x-mpegURL',
-    withCredentials: false,
-  })
+  const humanId = pathname.substr(1)
+  fetch(`/api/stream/${humanId}`)
+    .then((res) => {
+      if (res.status === 200) {
+        return res.json()
+      }
+      const playbackUrl = `https://cdn.livepeer.com/hls/${humanId}/index.m3u8`
+      return { playbackUrl }
+    })
+    .then((info) => {
+      player.src({
+        src: info.playbackUrl,
+        type: 'application/x-mpegURL',
+        withCredentials: false,
+      })
+    })
 }
