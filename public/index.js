@@ -191,6 +191,9 @@ function connect() {
     playbackUrl.innerText = `${protocol}//${hostname}${
       localhost ? `:${port}` : ''
     }/${playbackId}`
+    if (recording) {
+      playbackUrl.classList.add('visible')
+    }
   })
 
   socket.addEventListener('error', (event) => {
@@ -225,7 +228,9 @@ function start_recording(stream) {
 
   record.style.background = '#dd0000'
   video.style.opacity = 1
-  playbackUrl.classList.add('visible')
+  if (_playbackId) {
+    playbackUrl.classList.add('visible')
+  }
 
   record_flash_interval = setInterval(() => {
     record_frash_dim = !record_frash_dim
