@@ -1,6 +1,7 @@
 require('dotenv').config()
 
 const express = require('express')
+const cookie = require('cookie')
 const path = require('path')
 const app = express()
 
@@ -36,11 +37,22 @@ const wss = new WebSocket.Server({
   path: '/',
 })
 
+const streamIdCookieName = 'JustCastId'
+
 wss.on('connection', async function connection(ws, req) {
   console.error('wss', 'connection', req.url)
 
-  const info = await livepeer.createStream()
-  ws.send(JSON.stringify({ playbackId: info.playbackId }))
+  const cookies = cookie.parse(req.headers.cookie ?? '')
+  const prevStream = cookies[streamIdCookieName]
+  const info = prevStream
+    ? await livepeer.getStream(prevStream)
+    : await livepeer.createStream()
+
+  const handshake = {
+    playbackId: info.playbackId,
+    setCookie: prevStream ? {} : { [streamIdCookieName]: info.streamId },
+  }
+  ws.send(JSON.stringify(handshake))
 
   ffmpeg.pipeWsToRtmp(ws, info)
 })
