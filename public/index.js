@@ -63,6 +63,10 @@ isIp.version = (str) => (isIp(str) ? (isIp.v4(str) ? 4 : 6) : undefined)
 const video = document.getElementById('video')
 const playbackUrl = document.getElementById('playbackUrl')
 
+videojs.options.vhs.overrideNative = true
+videojs.options.html5.nativeVideoTracks = false
+videojs.options.html5.nativeAudioTracks = false
+videojs.options.hls.overrideNative = true
 const player = videojs(video)
 
 if (window.location !== window.parent.location) {
@@ -220,11 +224,15 @@ if (transmitter) {
 } else {
   player.volume(1)
   player.controls(true)
+  player.hlsQualitySelector({
+    displayCurrentQuality: true,
+  });
   const playbackId = pathname.substr(1)
   const playbackUrl = `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
   player.src({
     src: playbackUrl,
     type: 'application/x-mpegURL',
     withCredentials: false,
+    overrideNative: true,
   })
 }
