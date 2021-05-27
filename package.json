@@ -3,15 +3,22 @@
   "description": "Simple hello world sample in Node",
   "version": "1.0.0",
   "private": true,
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/server/index.js",
     "test": "mocha test/index.test.js --exit",
     "system-test": "NAME=Cloud mocha test/system.test.js --timeout=180000",
     "lint": "eslint '**/*.js'",
     "fix": "eslint --fix '**/*.js'",
     "publish": "gcloud builds submit --tag gcr.io/justcast-it/justcast-it",
-    "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4"
+    "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4",
+    "build:client": "run-p build:client:copy build:client:bundle",
+    "watch:client": "run-p watch:client:copy watch:client:bundle",
+    "build:client:copy": "mkdir -p public; cp -r src/client/* public",
+    "watch:client:copy": "copy-and-watch --watch src/client/* public",
+    "build:client:bundle": "node_modules/esbuild/bin/esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
+    "watch:client:bundle": "node_modules/esbuild/bin/esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
+    "lib": "tsc"
   },
   "engines": {
     "node": ">= 12.0.0"
@@ -24,13 +31,18 @@
     "cookie": "^0.4.1",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "is-ip": "^3.1.0",
     "unique-names-generator": "^4.5.0",
     "ws": "^7.4.6"
   },
   "devDependencies": {
+    "copy-and-watch": "^0.1.5",
+    "esbuild": "0.12.3",
     "google-auth-library": "^7.0.0",
     "got": "^11.0.0",
     "mocha": "^8.0.0",
-    "supertest": "^6.0.0"
+    "npm-run-all": "^4.1.5",
+    "supertest": "^6.0.0",
+    "typescript": "^4.3.2"
   }
 }
