@@ -9,8 +9,11 @@ WORKDIR /usr/src/app
 
 COPY package.json yarn.lock ./
 
-RUN yarn --production --frozen-lockfile
+# RUN yarn --production --frozen-lockfile
+RUN yarn --frozen-lockfile
 
 COPY . ./
 
-CMD [ "node", "src/index.js" ]
+RUN yarn build:client
+
+CMD [ "node", "src/server/index.js" ]

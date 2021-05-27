@@ -11,21 +11,26 @@ const livepeer = require('./livepeer')
 
 const CWD = process.cwd()
 
+const FILE_REGEX = /.+\..+/
+
+const isFilename = (str) => {
+  return FILE_REGEX.test(str)
+}
+
 app.get('*', (req, res) => {
   const { url } = req
   const url_segments = url.split('/')
   const url_segments_length = url_segments.length
-  const url_last_segment = url_segments[url_segments_length - 1] || 'index.html'
-  let file_name = url_last_segment
-  if (url_last_segment === 'index.js') {
+  const url_last_segment = url_segments[url_segments_length - 1] || ''
+  let file_name
+  if (isFilename(url_last_segment)) {
+    file_name = url_last_segment
   } else {
     file_name = 'index.html'
   }
   const file_path = path.join(CWD, 'public', file_name)
   res.sendFile(file_path)
 })
-
-// app.use(express.static("public"));
 
 const port = process.env.PORT || 8080
 const server = app.listen(port, () => {
