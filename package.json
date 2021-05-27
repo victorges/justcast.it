@@ -16,8 +16,8 @@
     "watch:client": "run-p watch:client:copy watch:client:bundle",
     "build:client:copy": "mkdir -p public; cp -r src/client/* public",
     "watch:client:copy": "copy-and-watch --watch src/client/* public",
-    "build:client:bundle": "node_modules/esbuild/bin/esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
-    "watch:client:bundle": "node_modules/esbuild/bin/esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
+    "build:client:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
+    "watch:client:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
     "lib": "tsc"
   },
   "engines": {
