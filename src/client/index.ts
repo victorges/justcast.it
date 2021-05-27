@@ -1,4 +1,4 @@
-import isIp = require('is-ip')
+import isIp from 'is-ip'
 
 import { copyToClipboard } from './clipboard'
 

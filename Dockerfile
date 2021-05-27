@@ -14,6 +14,6 @@ RUN yarn --frozen-lockfile
 
 COPY . ./
 
-RUN yarn build:client
+RUN yarn build
 
-CMD [ "node", "src/server/index.js" ]
+CMD [ "node", "lib/index.js" ]

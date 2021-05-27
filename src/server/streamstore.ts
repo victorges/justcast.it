@@ -1,6 +1,6 @@
-const { Firestore } = require('@google-cloud/firestore')
-const firestore = new Firestore()
+import { Firestore } from '@google-cloud/firestore'
 
+const firestore = new Firestore()
 const collectionRef = firestore.collection('justcast-streams')
 
 async function getByHumanId(humanId) {
@@ -20,7 +20,7 @@ async function create(humanId, data) {
   await collectionRef.doc(humanId).create(data)
 }
 
-module.exports = {
+export default {
   getByHumanId,
   getByStreamId,
   create

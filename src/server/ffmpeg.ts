@@ -1,4 +1,4 @@
-const child_process = require('child_process')
+import child_process from 'child_process'
 
 const logTs = () => new Date().toISOString()
 
@@ -44,4 +44,4 @@ function pipeWsToRtmp(ws, info) {
   })
 }
 
-module.exports = { pipeWsToRtmp }
+export { pipeWsToRtmp }

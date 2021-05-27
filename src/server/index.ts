@@ -1,16 +1,15 @@
 require('dotenv').config()
 
-const express = require('express')
-const cookie = require('cookie')
-const path = require('path')
+import ws from 'ws'
+import path from 'path'
+import cookie from 'cookie'
+import express from 'express'
+
+import streamstore from './streamstore'
+import { pipeWsToRtmp } from './ffmpeg'
+import { getOrCreateStream } from './streams'
+
 const app = express()
-
-const WebSocket = require('ws')
-const ffmpeg = require('./ffmpeg')
-const streamstore = require('./streamstore')
-const { getOrCreateStream } = require('./streams')
-
-const CWD = process.cwd()
 
 app.get('/api/stream/:humanId', async (req, res) => {
   const id = req.params.humanId
@@ -24,6 +23,7 @@ app.get('/api/stream/:humanId', async (req, res) => {
   res.json({ humanId, playbackId, playbackUrl })
 })
 
+const CWD = process.cwd()
 const FILE_REGEX = /.+\..+/
 
 const isFilename = (str) => {
@@ -50,7 +50,7 @@ const server = app.listen(port, () => {
   console.log(`listening on port ${port}`)
 })
 
-const wss = new WebSocket.Server({
+const wss = new ws.Server({
   server,
   path: '/',
 })
@@ -72,7 +72,7 @@ wss.on('connection', async function connection(ws, req) {
   }
   ws.send(JSON.stringify(handshake))
 
-  ffmpeg.pipeWsToRtmp(ws, info)
+  pipeWsToRtmp(ws, info)
 })
 
 wss.on('close', function close() {

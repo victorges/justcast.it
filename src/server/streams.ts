@@ -1,12 +1,8 @@
-const livepeer = require('./livepeer')
-const streamstore = require('./streamstore')
+import livepeer from './livepeer'
+import streamstore from './streamstore'
 
-const {
-  uniqueNamesGenerator,
-  adjectives,
-  animals,
-  names,
-} = require('unique-names-generator')
+import { uniqueNamesGenerator, adjectives, animals, names } from 'unique-names-generator'
+
 const hidConfig = {
   dictionaries: [adjectives, animals, names],
   separator: '-',
@@ -31,4 +27,4 @@ async function getOrCreateStream(prevStreamId) {
   return info
 }
 
-module.exports = { getOrCreateStream }
+export { getOrCreateStream }

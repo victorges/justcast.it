@@ -1,4 +1,4 @@
-const axios = require('axios').default
+import axios from 'axios'
 
 const apiToken = process.env['LIVEPEER_API_TOKEN']
 const http = axios.create({
@@ -41,7 +41,7 @@ async function createStream(name) {
   return info
 }
 
-module.exports = {
+export default {
   playbackUrl,
   getStream,
   createStream,
