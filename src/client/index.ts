@@ -161,6 +161,8 @@ function start_recording(stream) {
         (MediaRecorder.isTypeSupported(types[i]) ? 'Maybe!' : 'Nope :(') + '\n'
     }
 
+    alert(supported)
+
     // @ts-ignore
     media_recorder = new MediaRecorder(stream, {
       mimeType: 'video/webm;codecs=opus',
