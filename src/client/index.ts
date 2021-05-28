@@ -146,7 +146,7 @@ function start_recording(stream) {
     try {
       // @ts-ignore
       media_recorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=h264',
+        mimeType: 'video/webm;codecs=opus',
         videoBitsPerSecond: 3 * 1024 * 1024,
       })
 
