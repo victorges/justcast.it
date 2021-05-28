@@ -135,11 +135,36 @@ function start_recording(stream) {
   // console.log('start_recording', stream)
   // @ts-ignore
   if (window.MediaRecorder) {
+    let mimeType: string | undefined = undefined
+
+    var types = [
+      'video/webm;codecs=h264',
+      'video/webm',
+      'video/webm;codecs=opus',
+      'video/webm;codecs=vp8',
+      'video/webm;codecs=daala',
+      'video/mpeg',
+    ]
+
+    for (var type of types) {
+      // @ts-ignore
+      const supported = MediaRecorder.isTypeSupported(type)
+      if (supported) {
+        mimeType = type
+        break
+      }
+    }
+
+    if (!mimeType) {
+      // TODO
+      return
+    }
+
     recording = true
 
     // @ts-ignore
     media_recorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=h264',
+      mimeType,
       videoBitsPerSecond: 3 * 1024 * 1024,
     })
 
