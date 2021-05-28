@@ -141,7 +141,25 @@ function start_recording(stream) {
   if (window.MediaRecorder) {
     recording = true
 
-    alert('start')
+    // alert('start')
+
+    var types = [
+      'video/webm',
+      'audio/webm',
+      'video/webm;codecs=vp8',
+      'video/webm;codecs=daala',
+      'video/webm;codecs=h264',
+      'audio/webm;codecs=opus',
+      'video/mpeg',
+    ]
+
+    let supported = ''
+
+    for (var i in types) {
+      supported +=
+        //@ts-ignore
+        (MediaRecorder.isTypeSupported(types[i]) ? 'Maybe!' : 'Nope :(') + '\n'
+    }
 
     // @ts-ignore
     media_recorder = new MediaRecorder(stream, {
