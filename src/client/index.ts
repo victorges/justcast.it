@@ -143,40 +143,33 @@ function start_recording(stream) {
 
     alert('start')
 
-    try {
-      // @ts-ignore
-      media_recorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=opus',
-        videoBitsPerSecond: 3 * 1024 * 1024,
-      })
+    // @ts-ignore
+    media_recorder = new MediaRecorder(stream, {
+      mimeType: 'video/webm;codecs=opus',
+      videoBitsPerSecond: 3 * 1024 * 1024,
+    })
 
-      media_recorder.ondataavailable = function (event) {
-        const { data } = event
-        socket.send(data)
-      }
-
-      media_recorder.start(1000)
-
-      record.style.background = '#dd0000'
-
-      video.style.opacity = '1'
-
-      playbackUrl.classList.add('visible')
-
-      if (_playbackId) {
-        playbackUrl.classList.add('visible')
-      }
-    } catch (err) {
-      alert(err.message)
+    media_recorder.ondataavailable = function (event) {
+      const { data } = event
+      socket.send(data)
     }
-    
+
+    media_recorder.start(1000)
+
+    record.style.background = '#dd0000'
+
+    video.style.opacity = '1'
+
+    playbackUrl.classList.add('visible')
+
+    if (_playbackId) {
+      playbackUrl.classList.add('visible')
+    }
 
     alert('A')
 
     record_flash_interval = setInterval(() => {
       record_frash_dim = !record_frash_dim
-
-      alert('toggle')
 
       if (record_frash_dim) {
         record.style.opacity = '0'
