@@ -79,7 +79,7 @@ function connect() {
   socket.addEventListener('open', function (event) {
     console.log('socket', 'open')
 
-    // alert('open')
+    alert('open')
 
     connected = true
     connecting = false
@@ -140,6 +140,8 @@ function start_recording(stream) {
   // @ts-ignore
   if (window.MediaRecorder) {
     recording = true
+
+    alert('start')
 
     // @ts-ignore
     media_recorder = new MediaRecorder(stream, {
