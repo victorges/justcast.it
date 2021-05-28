@@ -23,4 +23,4 @@ RUN yarn --frozen-lockfile --production
 COPY --from=build /usr/build/lib ./lib
 COPY --from=build /usr/build/public ./public
 
-CMD [ "node", "lib/index.js" ]
+CMD [ "yarn", "start:prod" ]

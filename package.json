@@ -5,20 +5,23 @@
   "private": true,
   "main": "lib/index.js",
   "scripts": {
-    "start": "node src/server/index.js",
+    "start": "ts-node src/server/index.ts",
+    "start:prod": "node lib/index.js",
     "lint": "eslint '**/*.js'",
     "fix": "eslint --fix '**/*.js'",
     "publish": "gcloud builds submit --tag gcr.io/justcast-it/justcast-it",
     "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4",
     "clean": "rm -r lib; rm -r public",
     "build": "run-p build:client build:server",
+    "watch": "run-p watch:client watch:server",
     "build:client": "run-p build:client:copy build:client:bundle",
     "watch:client": "run-p watch:client:copy watch:client:bundle",
-    "build:client:copy": "mkdir -p public; cp -r src/client/* public",
-    "watch:client:copy": "copy-and-watch --watch src/client/* public",
+    "build:client:copy": "rsync --exclude '*.ts' src/client/* public",
+    "watch:client:copy": "nodemon --watch src/client --ext html,css --exec 'run-s build:client:copy'",
     "build:client:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
     "watch:client:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/client/index.ts --outfile=public/bundle.js",
-    "build:server": "tsc"
+    "build:server": "tsc",
+    "watch:server": "nodemon --watch src/server --ext ts --exec 'run-s start'"
   },
   "engines": {
     "node": ">= 12.0.0"
@@ -39,11 +42,11 @@
     "@types/cookie": "^0.4.0",
     "@types/express": "^4.17.12",
     "@types/ws": "^7.4.4",
-    "copy-and-watch": "^0.1.5",
     "esbuild": "0.12.3",
     "google-auth-library": "^7.0.0",
     "got": "^11.0.0",
     "mocha": "^8.0.0",
+    "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
     "supertest": "^6.0.0",
     "typescript": "^4.3.2"
