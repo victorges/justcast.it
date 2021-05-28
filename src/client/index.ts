@@ -135,11 +135,14 @@ let media_recorder = null
 
 let record_frash_dim = false
 
+// @ts-ignore
+alert(!!window.MediaRecorder)
+
 function start_recording(stream) {
   // console.log('start_recording', stream)
   // @ts-ignore
   if (window.MediaRecorder) {
-    alert('A')
+    
     
     recording = true
 
