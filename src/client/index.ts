@@ -166,6 +166,8 @@ function start_recording(stream) {
       playbackUrl.classList.add('visible')
     }
 
+    alert('A')
+
     record_flash_interval = setInterval(() => {
       record_frash_dim = !record_frash_dim
 
