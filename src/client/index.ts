@@ -140,7 +140,7 @@ function start_recording(stream) {
   // @ts-ignore
   if (window.MediaRecorder) {
     alert('A')
-    // alert(!!stream)
+    alert(!!stream)
     
     recording = true
 
