@@ -41,7 +41,7 @@ app.get('*', (req, res) => {
   } else {
     file_name = 'index.html'
   }
-  const file_path = path.join(CWD, 'public', file_name)
+  const file_path = path.join(CWD, 'dist/public', file_name)
   res.sendFile(file_path)
 })
 

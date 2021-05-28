@@ -22,7 +22,6 @@ WORKDIR /usr/app
 COPY package.json yarn.lock ./
 RUN yarn --frozen-lockfile --production
 
-COPY --from=build /usr/build/lib ./lib
-COPY --from=build /usr/build/public ./public
+COPY --from=build /usr/build/dist ./dist
 
 CMD [ "yarn", "start:prod" ]
