@@ -9,6 +9,7 @@
     "sourceMap": true,
     "target": "es2015",
     "module": "commonjs",
+    "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitAny": true,

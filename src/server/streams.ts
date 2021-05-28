@@ -9,12 +9,10 @@ const hidConfig = {
 }
 const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
 
-async function getOrCreateStream(prevStreamId: string) {
+async function getOrCreateStream(prevStreamId?: string): Promise<StreamInfo> {
   if (prevStreamId) {
     const info = await streamstore.getByStreamId(prevStreamId)
-    if (info) {
-      return info
-    }
+    if (info) return info
   }
 
   const humanId = humanIdGen()
@@ -23,7 +21,7 @@ async function getOrCreateStream(prevStreamId: string) {
     : await livepeer.createStream(`justcast-it-${humanId}`)
 
   const info = { ...lpInfo, humanId }
-  await streamstore.create(humanId, info)
+  await streamstore.create(info)
   return info
 }
 

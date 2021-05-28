@@ -22,8 +22,8 @@ async function getByStreamId(streamId: string) {
   return list.docs[0].data() as StreamInfo
 }
 
-async function create(humanId: string, data: StreamInfo) {
-  await collectionRef.doc(humanId).create(data)
+async function create(info: StreamInfo) {
+  await collectionRef.doc(info.humanId).create(info)
 }
 
 export default {
