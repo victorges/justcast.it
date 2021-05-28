@@ -79,8 +79,6 @@ function connect() {
   socket.addEventListener('open', function (event) {
     console.log('socket', 'open')
 
-    alert('open')
-
     connected = true
     connecting = false
 
@@ -155,10 +153,10 @@ function start_recording(stream) {
 
     let supported = ''
 
-    for (var i in types) {
-      supported +=
+    for (var type of types) {
+      supported += type + ' ' +
         //@ts-ignore
-        (MediaRecorder.isTypeSupported(types[i]) ? 'Maybe!' : 'Nope :(') + '\n'
+        (MediaRecorder.isTypeSupported(type) ? 'true' : 'false') + '\n'
     }
 
     alert(supported)
