@@ -1,6 +1,6 @@
 {
-  "name": "justcast-it",
-  "description": "Straightforwad 1-click livestreaming web app",
+  "name": "helloworld",
+  "description": "Simple hello world sample in Node",
   "version": "1.0.0",
   "private": true,
   "main": "dist/server/index.js",
@@ -14,22 +14,18 @@
     "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4",
     "clean": "rm -r dist",
     "build": "run-p build:client build:server",
-    "build:nested": "(cd server && yarn build:server); (cd client && yarn build:client)",
     "build:docker": "docker build --progress=plain -t justcast-it .",
     "watch": "run-p watch:client watch:server",
     "build:client": "run-p build:client:copy build:client:bundle",
     "watch:client": "run-p watch:client:copy watch:client:bundle",
-    "build:client:copy": "mkdir -p dist && rsync --exclude '*.ts' src/client/* dist/public",
-    "watch:client:copy": "nodemon --watch src/client --ext html,css --exec 'run-s build:client:copy'",
-    "build:client:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/client/index.ts --outfile=dist/public/bundle.js",
-    "watch:client:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/client/index.ts --outfile=dist/public/bundle.js",
-    "build:server": "tsc",
-    "watch:server": "nodemon --watch src/server --ext ts --exec 'run-s start'"
+    "build:client:copy": "mkdir -p ../dist && rsync --exclude '*.ts' src/* ../dist/public",
+    "watch:client:copy": "nodemon --watch src --ext html,css --exec 'run-s build:client:copy'",
+    "build:client:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/index.ts --outfile=../dist/public/bundle.js",
+    "watch:client:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/index.ts --outfile=../dist/public/bundle.js"
   },
-  "workspaces": [
-    "server",
-    "client"
-  ],
+  "engines": {
+    "node": ">= 12.0.0"
+  },
   "author": "Neolag Fresh Ventures",
   "license": "Apache-2.0",
   "dependencies": {
@@ -53,7 +49,6 @@
     "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
     "supertest": "^6.0.0",
-    "ts-node": "^10.0.0",
     "typescript": "^4.3.2"
   }
 }
