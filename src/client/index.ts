@@ -79,7 +79,7 @@ function connect() {
   socket.addEventListener('open', function (event) {
     console.log('socket', 'open')
 
-    alert('open')
+    // alert('open')
 
     connected = true
     connecting = false
