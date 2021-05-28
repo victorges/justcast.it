@@ -18,7 +18,7 @@
     "watch": "run-p watch:client watch:server",
     "build:client": "run-p build:client:copy build:client:bundle",
     "watch:client": "run-p watch:client:copy watch:client:bundle",
-    "build:client:copy": "mkdir -p dist && rsync --exclude '*.ts' src/client/* dist/public",
+    "build:client:copy": "mkdir -p dist && sudo node ./node_modules/rsync/rsync.js --exclude '*.ts' src/client/* dist/public",
     "watch:client:copy": "nodemon --watch src/client --ext html,css --exec 'run-s build:client:copy'",
     "build:client:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/client/index.ts --outfile=dist/public/bundle.js",
     "watch:client:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/client/index.ts --outfile=dist/public/bundle.js",
