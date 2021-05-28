@@ -1,5 +1,5 @@
 import livepeer from './livepeer'
-import streamstore from './streamstore'
+import streamstore, { StreamInfo } from './streamstore'
 
 import { uniqueNamesGenerator, adjectives, animals, names } from 'unique-names-generator'
 
