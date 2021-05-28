@@ -1,5 +1,7 @@
 FROM node:14-slim AS build
 
+RUN apt update && apt install -y rsync
+
 WORKDIR /usr/build
 
 COPY package.json yarn.lock ./
