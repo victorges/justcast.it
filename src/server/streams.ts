@@ -9,7 +9,7 @@ const hidConfig = {
 }
 const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
 
-async function getOrCreateStream(prevStreamId) {
+async function getOrCreateStream(prevStreamId: string) {
   if (prevStreamId) {
     const info = await streamstore.getByStreamId(prevStreamId)
     if (info) {

@@ -1,12 +1,15 @@
+import WebSocket from 'ws'
 import child_process from 'child_process'
+
+import { StreamInfo } from './streamstore'
 
 const logTs = () => new Date().toISOString()
 
-function pipeWsToRtmp(ws, info) {
+function pipeWsToRtmp(ws: WebSocket, info: StreamInfo) {
   const { streamId, streamUrl } = info
   const log = {
-    info: (msg) => console.log(`[${logTs()}][stream ${streamId}] ${msg}`),
-    err: (msg) => console.error(`[${logTs()}][stream ${streamId}] ${msg}`),
+    info: (msg: string) => console.log(`[${logTs()}][stream ${streamId}] ${msg}`),
+    err: (msg: string) => console.error(`[${logTs()}][stream ${streamId}] ${msg}`),
   }
   log.info(`Piping ws through ffmpeg to stream: ${JSON.stringify(info)}`)
 

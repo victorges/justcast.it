@@ -14,7 +14,7 @@ async function getByHumanId(humanId: string) {
   return doc.data() as StreamInfo | undefined
 }
 
-async function getByStreamId(streamId) {
+async function getByStreamId(streamId: string) {
   const list = await collectionRef.where('streamId', '==', streamId).get()
   if (list.size != 1) {
     return undefined

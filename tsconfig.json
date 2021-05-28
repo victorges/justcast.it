@@ -11,6 +11,7 @@
     "module": "commonjs",
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "noImplicitAny": true,
     "declaration": true,
     "typeRoots": ["node_modules/@types"],
     "resolveJsonModule": true

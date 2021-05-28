@@ -1,6 +1,6 @@
 require('dotenv').config()
 
-import ws from 'ws'
+import WebSocket from 'ws'
 import path from 'path'
 import cookie from 'cookie'
 import express from 'express'
@@ -26,7 +26,7 @@ app.get('/api/stream/:humanId', async (req, res) => {
 const CWD = process.cwd()
 const FILE_REGEX = /.+\..+/
 
-const isFilename = (str) => {
+const isFilename = (str: string) => {
   return FILE_REGEX.test(str)
 }
 
@@ -50,7 +50,7 @@ const server = app.listen(port, () => {
   console.log(`listening on port ${port}`)
 })
 
-const wss = new ws.Server({
+const wss = new WebSocket.Server({
   server,
   path: '/',
 })

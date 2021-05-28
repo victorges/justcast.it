@@ -9,7 +9,7 @@ const http = axios.create({
   },
 })
 
-const playbackUrl = (playbackId) =>
+const playbackUrl = (playbackId: string) =>
   `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
 
 export interface LivepeerStream {
@@ -19,14 +19,14 @@ export interface LivepeerStream {
   playbackUrl: string,
 }
 
-const streamObjToInfo = ({ id, streamKey, playbackId }) => ({
+const streamObjToInfo = ({ id, streamKey, playbackId }: any) => ({
   streamId: id,
   streamUrl: `rtmp://rtmp.livepeer.com/live/${streamKey}`,
   playbackId,
   playbackUrl: playbackUrl(playbackId),
 } as LivepeerStream)
 
-async function getStream(id) {
+async function getStream(id: string) {
   const response = await http.get(`/stream/${id}`)
   return streamObjToInfo(response.data)
 }
@@ -38,7 +38,7 @@ const defaultProfiles = [
   { name: '720p0', fps: 0, bitrate: 3000000, width: 1280, height: 720 },
 ]
 
-async function createStream(name) {
+async function createStream(name: string) {
   const payload = {
     name,
     profiles: defaultProfiles,
