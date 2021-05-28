@@ -143,28 +143,33 @@ function start_recording(stream) {
 
     alert('start')
 
-    // @ts-ignore
-    media_recorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=h264',
-      videoBitsPerSecond: 3 * 1024 * 1024,
-    })
+    try {
+      // @ts-ignore
+      media_recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=h264',
+        videoBitsPerSecond: 3 * 1024 * 1024,
+      })
 
-    media_recorder.ondataavailable = function (event) {
-      const { data } = event
-      socket.send(data)
-    }
+      media_recorder.ondataavailable = function (event) {
+        const { data } = event
+        socket.send(data)
+      }
 
-    media_recorder.start(1000)
+      media_recorder.start(1000)
 
-    record.style.background = '#dd0000'
+      record.style.background = '#dd0000'
 
-    video.style.opacity = '1'
+      video.style.opacity = '1'
 
-    playbackUrl.classList.add('visible')
-
-    if (_playbackId) {
       playbackUrl.classList.add('visible')
+
+      if (_playbackId) {
+        playbackUrl.classList.add('visible')
+      }
+    } catch (err) {
+      alert(err.message)
     }
+    
 
     alert('A')
 
