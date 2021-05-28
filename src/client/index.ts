@@ -139,9 +139,6 @@ function start_recording(stream) {
   // console.log('start_recording', stream)
   // @ts-ignore
   if (window.MediaRecorder) {
-    alert('A')
-    alert(!!stream)
-    
     recording = true
 
     // @ts-ignore
@@ -170,6 +167,8 @@ function start_recording(stream) {
     record_flash_interval = setInterval(() => {
       record_frash_dim = !record_frash_dim
 
+      alert('toggle')
+
       if (record_frash_dim) {
         record.style.opacity = '0'
       } else {
@@ -182,6 +181,7 @@ function start_recording(stream) {
 let record_flash_interval
 
 function stop_recording() {
+  alert('stop')
   recording = false
 
   media_recorder.stop()
