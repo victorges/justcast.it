@@ -91,8 +91,6 @@ function connect() {
   socket.addEventListener('close', function (event) {
     console.log('socket', 'close')
 
-    alert('close')
-
     connected = false
     connecting = false
 
@@ -137,33 +135,36 @@ function start_recording(stream) {
   // console.log('start_recording', stream)
   // @ts-ignore
   if (window.MediaRecorder) {
-    recording = true
-
-    // alert('start')
+    let mimeType: string | undefined = undefined
 
     var types = [
-      'video/webm',
-      'audio/webm',
+      'video/webm;codecs=h264',
+      'video/webm;codecs=opus',
       'video/webm;codecs=vp8',
       'video/webm;codecs=daala',
-      'video/webm;codecs=h264',
-      'audio/webm;codecs=opus',
+      'video/webm',
       'video/mpeg',
     ]
 
-    let supported = ''
-
     for (var type of types) {
-      supported += type + ' ' +
-        //@ts-ignore
-        (MediaRecorder.isTypeSupported(type) ? 'true' : 'false') + '\n'
+      // @ts-ignore
+      const supported = MediaRecorder.isTypeSupported(type)
+      if (supported) {
+        mimeType = type
+        break
+      }
     }
 
-    alert(supported)
+    if (!mimeType) {
+      // TODO
+      return
+    }
+
+    recording = true
 
     // @ts-ignore
     media_recorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=opus',
+      mimeType,
       videoBitsPerSecond: 3 * 1024 * 1024,
     })
 
@@ -184,8 +185,6 @@ function start_recording(stream) {
       playbackUrl.classList.add('visible')
     }
 
-    alert('A')
-
     record_flash_interval = setInterval(() => {
       record_frash_dim = !record_frash_dim
 
@@ -201,7 +200,6 @@ function start_recording(stream) {
 let record_flash_interval
 
 function stop_recording() {
-  alert('stop')
   recording = false
 
   media_recorder.stop()
