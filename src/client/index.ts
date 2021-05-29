@@ -175,7 +175,6 @@ function start_recording(stream) {
 
   media_recorder.ondataavailable = function (event) {
     const { data } = event
-    console.log('sending video data')
     send(data)
   }
 
