@@ -263,7 +263,10 @@ async function set_media_to_user(): Promise<MediaStream> {
 
   return new Promise((resolve, reject) => {
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
+      .getUserMedia({
+        video: true,
+        audio: { echoCancellation: true, noiseSuppression: true },
+      })
       .then((stream) => {
         set_video_stream(stream)
         resolve(stream)
@@ -282,6 +285,7 @@ function setup_media_recorder(stream: MediaStream): void {
 
   media_recorder = new MediaRecorder(stream, {
     mimeType: _mimeType,
+    audioBitsPerSecond: 128 * 1024,
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
 
