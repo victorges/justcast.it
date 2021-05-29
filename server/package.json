@@ -1,29 +1,19 @@
 {
-  "name": "helloworld",
-  "description": "Simple hello world sample in Node",
+  "name": "justserve-it",
+  "description": "justcast.it server",
   "version": "1.0.0",
   "private": true,
-  "main": "dist/server/index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/server/index.ts",
-    "start:prod": "node dist/server/index.js",
-    "start:docker": "docker run -it --rm -p 8080:8080 --name justcast-it justcast-it",
-    "lint": "eslint '**/*.js'",
-    "fix": "eslint --fix '**/*.js'",
-    "publish": "gcloud builds submit --tag gcr.io/justcast-it/justcast-it",
-    "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4",
-    "clean": "rm -r dist",
-    "build": "run-p build:client build:server",
-    "build:docker": "docker build --progress=plain -t justcast-it .",
-    "watch": "run-p watch:client watch:server",
-    "build:server": "tsc",
-    "watch:server": "nodemon --watch src --ext ts --exec 'run-s start'"
+    "start": "cd .. && ts-node server/src/index.ts",
+    "build": "tsc",
+    "watch": "nodemon --watch src --ext ts --exec 'run-s start'"
   },
   "engines": {
     "node": ">= 12.0.0"
   },
   "author": "Neolag Fresh Ventures",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "dependencies": {
     "@google-cloud/firestore": "^4.12.0",
     "axios": "^0.21.1",
