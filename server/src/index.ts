@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config({ path: './.secrets/env'})
 
 import WebSocket from 'ws'
 import path from 'path'
