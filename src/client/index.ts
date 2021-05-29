@@ -39,7 +39,7 @@ const secure = protocol === 'https:'
 const transmitter = pathname === '/'
 const receiver = !transmitter
 
-let socket = null
+let socket: WebSocket = null
 let connected = false
 let connecting = false
 
@@ -49,12 +49,43 @@ let recording = false
 
 let _playbackId = null
 
+let mimeType: string | undefined = undefined
+
+function initMimeType() {
+  // @ts-ignore
+  if (!window.MediaRecorder) return
+
+  var types = [
+    // 'video/webm;codecs=h264',
+    'video/webm',
+    'video/webm;codecs=opus',
+    'video/webm;codecs=vp8',
+    'video/webm;codecs=daala',
+    'video/mpeg',
+  ]
+
+  for (var type of types) {
+    // @ts-ignore
+    const supported = MediaRecorder.isTypeSupported(type)
+    if (supported) {
+      mimeType = type
+      break
+    }
+  }
+
+  console.log('using mimeType', mimeType)
+}
+
+function sendJSON(obj) {
+  const data = JSON.stringify(obj)
+  send(data)
+}
+
 function send(data) {
   if (!connected) {
     throw new Error('WebSocket is not connected')
   }
-  const value = JSON.stringify(data)
-  socket.send(value)
+  socket.send(data)
 }
 
 function connect() {
@@ -71,6 +102,7 @@ function connect() {
       url = `ws://${hostname}:8080`
     }
   }
+  url += `?mimeType=${mimeType}`
 
   console.log('socket', 'url', url)
 
@@ -78,14 +110,6 @@ function connect() {
 
   socket.addEventListener('open', function (event) {
     console.log('socket', 'open')
-
-    connected = true
-    connecting = false
-
-    send({
-      type: 'init',
-      data: {},
-    })
   })
 
   socket.addEventListener('close', function (event) {
@@ -105,7 +129,12 @@ function connect() {
 
     console.log('socket', 'message', data)
 
-    const { playbackId, humanId, setCookie } = data
+    const { type, playbackId, humanId, setCookie } = data
+    if (type !== 'init') return disconnect(1002)
+
+    // we are only really connected when we receive the handshake msg from the server
+    connected = true
+    connecting = false
 
     for (const name in setCookie) {
       document.cookie = `${name}=${setCookie[name]}`
@@ -122,8 +151,8 @@ function connect() {
   })
 }
 
-function disconnect() {
-  socket.close()
+function disconnect(code?: number) {
+  socket.close(code)
   socket = null
 }
 
@@ -134,67 +163,43 @@ let record_frash_dim = false
 function start_recording(stream) {
   // console.log('start_recording', stream)
   // @ts-ignore
-  if (window.MediaRecorder) {
-    let mimeType: string | undefined = undefined
+  if (!window.MediaRecorder || !mimeType || !connected) return
 
-    var types = [
-      'video/webm;codecs=h264',
-      'video/webm',
-      'video/webm;codecs=opus',
-      'video/webm;codecs=vp8',
-      'video/webm;codecs=daala',
-      'video/mpeg',
-    ]
+  recording = true
 
-    for (var type of types) {
-      // @ts-ignore
-      const supported = MediaRecorder.isTypeSupported(type)
-      if (supported) {
-        mimeType = type
-        break
-      }
-    }
+  // @ts-ignore
+  media_recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: 3 * 1024 * 1024,
+  })
 
-    if (!mimeType) {
-      // TODO
-      return
-    }
-
-    recording = true
-
-    // @ts-ignore
-    media_recorder = new MediaRecorder(stream, {
-      mimeType,
-      videoBitsPerSecond: 3 * 1024 * 1024,
-    })
-
-    media_recorder.ondataavailable = function (event) {
-      const { data } = event
-      socket.send(data)
-    }
-
-    media_recorder.start(1000)
-
-    record.style.background = '#dd0000'
-
-    video.style.opacity = '1'
-
-    playbackUrl.classList.add('visible')
-
-    if (_playbackId) {
-      playbackUrl.classList.add('visible')
-    }
-
-    record_flash_interval = setInterval(() => {
-      record_frash_dim = !record_frash_dim
-
-      if (record_frash_dim) {
-        record.style.opacity = '0'
-      } else {
-        record.style.opacity = '1'
-      }
-    }, 1000)
+  media_recorder.ondataavailable = function (event) {
+    const { data } = event
+    console.log('sending video data')
+    send(data)
   }
+
+  media_recorder.start(1000)
+
+  record.style.background = '#dd0000'
+
+  video.style.opacity = '1'
+
+  playbackUrl.classList.add('visible')
+
+  if (_playbackId) {
+    playbackUrl.classList.add('visible')
+  }
+
+  record_flash_interval = setInterval(() => {
+    record_frash_dim = !record_frash_dim
+
+    if (record_frash_dim) {
+      record.style.opacity = '0'
+    } else {
+      record.style.opacity = '1'
+    }
+  }, 1000)
 }
 
 let record_flash_interval
@@ -218,6 +223,7 @@ if (transmitter) {
 
   player.volume(0)
 
+  initMimeType()
   connect()
 
   navigator.mediaDevices

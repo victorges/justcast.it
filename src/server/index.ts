@@ -66,13 +66,15 @@ wss.on('connection', async function connection(ws, req) {
 
   const setCookie = prevStreamId ? {} : { [streamIdCookieName]: info.streamId }
   const handshake = {
+    type: 'init',
     humanId: info.humanId,
     playbackId: info.playbackId,
     setCookie
   }
   ws.send(JSON.stringify(handshake))
 
-  pipeWsToRtmp(ws, info)
+  const mimematch = /mimeType=(.*)/.exec(req.url ?? '') ?? []
+  pipeWsToRtmp(ws, info, mimematch.length > 0 ? mimematch[1] : '')
 })
 
 wss.on('close', function close() {
