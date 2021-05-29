@@ -13,32 +13,15 @@
     "build:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/index.ts --outfile=../dist/public/bundle.js",
     "watch:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/index.ts --outfile=../dist/public/bundle.js"
   },
-  "engines": {
-    "node": ">= 12.0.0"
-  },
   "author": "Neolag Fresh Ventures",
   "license": "MIT",
   "dependencies": {
-    "@google-cloud/firestore": "^4.12.0",
-    "axios": "^0.21.1",
-    "cookie": "^0.4.1",
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "is-ip": "^3.1.0",
-    "unique-names-generator": "^4.5.0",
-    "ws": "^7.4.6"
+    "is-ip": "^3.1.0"
   },
   "devDependencies": {
-    "@types/cookie": "^0.4.0",
-    "@types/express": "^4.17.12",
-    "@types/ws": "^7.4.4",
     "esbuild": "0.12.3",
-    "google-auth-library": "^7.0.0",
-    "got": "^11.0.0",
-    "mocha": "^8.0.0",
     "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
-    "supertest": "^6.0.0",
     "typescript": "^4.3.2"
   }
 }
