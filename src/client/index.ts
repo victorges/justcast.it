@@ -56,7 +56,7 @@ function initMimeType() {
   if (!window.MediaRecorder) return
 
   var types = [
-    // 'video/webm;codecs=h264',
+    'video/webm;codecs=h264',
     'video/webm',
     'video/webm;codecs=opus',
     'video/webm;codecs=vp8',
