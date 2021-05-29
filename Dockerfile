@@ -21,8 +21,6 @@ RUN ffmpeg -version
 
 WORKDIR /usr/app
 
-ENV NODE_ENV production
-
 COPY package.json yarn.lock ./
 COPY server/package.json ./server/
 # skip client/package.json

@@ -6,7 +6,7 @@
   "main": "dist/server/index.js",
   "scripts": {
     "start": "cd server && yarn start",
-    "start:prod": "node dist/server/index.js",
+    "start:prod": "NODE_ENV=production node dist/server/index.js",
     "publish": "gcloud builds submit --tag gcr.io/justcast-it/justcast-it",
     "deploy": "gcloud run deploy justcast-it --image=gcr.io/justcast-it/justcast-it:latest --platform=managed --region=us-east4",
     "clean": "rm -r dist",
