@@ -1,6 +1,7 @@
 Dockerfile
 .dockerignore
 node_modules
+dist
 npm-debug.log
 .env
 .env.test
