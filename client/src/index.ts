@@ -76,11 +76,6 @@ function initMimeType() {
   console.log('using mimeType', mimeType)
 }
 
-function sendJSON(obj) {
-  const data = JSON.stringify(obj)
-  send(data)
-}
-
 function send(data) {
   if (!connected) {
     throw new Error('WebSocket is not connected')
@@ -88,7 +83,7 @@ function send(data) {
   socket.send(data)
 }
 
-function connect() {
+function connect(onConnected: () => void) {
   connecting = true
 
   let url
@@ -113,7 +108,7 @@ function connect() {
   })
 
   socket.addEventListener('close', function (event) {
-    console.log('socket', 'close')
+    console.log('socket', 'close', 'reason:', event.reason)
 
     connected = false
     connecting = false
@@ -144,6 +139,8 @@ function connect() {
     playbackUrl.innerText = `${protocol}//${hostname}${
       localhost ? `:${port}` : ''
     }/${humanId || playbackId}`
+
+    onConnected()
   })
 
   socket.addEventListener('error', (event) => {
@@ -163,7 +160,7 @@ let record_frash_dim = false
 function start_recording(stream) {
   // console.log('start_recording', stream)
   // @ts-ignore
-  if (!window.MediaRecorder || !mimeType || !connected) return
+  if (!window.MediaRecorder || !mimeType) return
 
   recording = true
 
@@ -173,12 +170,14 @@ function start_recording(stream) {
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
 
-  media_recorder.ondataavailable = function (event) {
-    const { data } = event
-    send(data)
-  }
+  media_recorder.start(2000)
 
-  media_recorder.start(1000)
+  connect(() => {
+    media_recorder.ondataavailable = function (event) {
+      const { data } = event
+      if (recording) send(data)
+    }
+  })
 
   record.style.background = '#dd0000'
 
@@ -207,6 +206,7 @@ function stop_recording() {
   recording = false
 
   media_recorder.stop()
+  disconnect(1000)
 
   record.style.opacity = '1'
   record.style.background = '#dddddd'
@@ -223,7 +223,6 @@ if (transmitter) {
   player.volume(0)
 
   initMimeType()
-  connect()
 
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: true })
