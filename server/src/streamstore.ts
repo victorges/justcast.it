@@ -1,9 +1,11 @@
 import { Firestore } from '@google-cloud/firestore'
 
-import { LivepeerStream } from './livepeer'
-
-export interface StreamInfo extends LivepeerStream {
+export interface StreamInfo {
   humanId: string
+  streamId: string
+  streamUrl: string
+  playbackId: string
+  playbackUrl: string
 }
 
 const firestore = new Firestore()
