@@ -43,13 +43,14 @@ let socket: WebSocket = null
 let connected = false
 let connecting = false
 
-let _stream = null
+let _stream: MediaStream = null
 
 let recording = false
 
-let _playbackId = null
+let _playbackId: string = null
+let _streamKey: string | undefined
 
-let mimeType: string | undefined = undefined
+let _mimeType: string | undefined
 
 function initMimeType() {
   // @ts-ignore
@@ -68,12 +69,28 @@ function initMimeType() {
     // @ts-ignore
     const supported = MediaRecorder.isTypeSupported(type)
     if (supported) {
-      mimeType = type
+      _mimeType = type
       break
     }
   }
 
-  console.log('using mimeType', mimeType)
+  console.log('using mimeType', _mimeType)
+}
+
+async function initStreamData() {
+  const res = await fetch(`/api/stream/init`, { method: 'POST' })
+  if (res.status !== 200) {
+    throw new Error('Bad init API status code: ' + res.status)
+  }
+
+  const { humanId, streamKey } = await res.json()
+  console.log('streaming to', humanId)
+
+  _playbackId = humanId
+  _streamKey = streamKey
+
+  const portStr = localhost ? `:${port}` : ''
+  playbackUrl.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
 
 function send(data) {
@@ -83,21 +100,12 @@ function send(data) {
   socket.send(data)
 }
 
-function connect(onConnected: () => void) {
+function connect(onOpen: (event: Event) => void, onClose: (event: CloseEvent) => void) {
   connecting = true
 
-  let url
-
-  if (localhost) {
-    url = `ws://${hostname}:8080`
-  } else {
-    if (secure) {
-      url = `wss://${hostname}:443`
-    } else {
-      url = `ws://${hostname}:8080`
-    }
-  }
-  url += `?mimeType=${mimeType}`
+  const protocol = !localhost && secure ? 'wss' : 'ws'
+  const portStr = localhost ? `:${port}` : ''
+  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}?mimeType=${_mimeType}`
 
   console.log('socket', 'url', url)
 
@@ -105,17 +113,19 @@ function connect(onConnected: () => void) {
 
   socket.addEventListener('open', function (event) {
     console.log('socket', 'open')
+
+    connected = true
+    connecting = false
+    onOpen(event)
   })
 
   socket.addEventListener('close', function (event) {
-    console.log('socket', 'close:', event.code, event.reason)
+    console.log('socket', 'close', event.code, event.reason)
 
     connected = false
     connecting = false
 
-    if (recording) {
-      stop_recording()
-    }
+    onClose(event)
   })
 
   socket.addEventListener('message', (event) => {
@@ -123,24 +133,6 @@ function connect(onConnected: () => void) {
     const data = JSON.parse(message)
 
     console.log('socket', 'message', data)
-
-    const { type, playbackId, humanId, setCookie } = data
-    if (type !== 'init') return disconnect(1002)
-
-    // we are only really connected when we receive the handshake msg from the server
-    connected = true
-    connecting = false
-
-    for (const name in setCookie) {
-      document.cookie = `${name}=${setCookie[name]}`
-    }
-    _playbackId = playbackId
-
-    playbackUrl.innerText = `${protocol}//${hostname}${
-      localhost ? `:${port}` : ''
-    }/${humanId || playbackId}`
-
-    onConnected()
   })
 
   socket.addEventListener('error', (event) => {
@@ -157,25 +149,37 @@ let media_recorder = null
 
 let record_frash_dim = false
 
-function start_recording(stream) {
+const minRetryThreshold = 60 * 1000 // 1 min
+
+function start_recording(stream: MediaStream) {
   // console.log('start_recording', stream)
   // @ts-ignore
-  if (!window.MediaRecorder || !mimeType) return
+  if (recording || !window.MediaRecorder || !_mimeType || !_streamKey) return
 
   recording = true
 
   // @ts-ignore
   media_recorder = new MediaRecorder(stream, {
-    mimeType,
+    mimeType: _mimeType,
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
-
   media_recorder.start(2000)
 
-  connect(() => {
+  const connectTime = Date.now()
+  connect(openEvent => {
     media_recorder.ondataavailable = function (event) {
       const { data } = event
-      if (recording) send(data)
+      if (recording && connected) send(data)
+    }
+  }, closeEvent => {
+    if (!recording) return
+    stop_recording()
+
+    const connectionAge = Date.now() - connectTime
+    const shouldRetry = closeEvent.code === 1006 && connectionAge >= minRetryThreshold
+    if (shouldRetry) {
+      console.log('restarting streaming due to ws 1006 error')
+      start_recording(stream)
     }
   })
 
@@ -184,10 +188,6 @@ function start_recording(stream) {
   video.style.opacity = '1'
 
   playbackUrl.classList.add('visible')
-
-  if (_playbackId) {
-    playbackUrl.classList.add('visible')
-  }
 
   record_flash_interval = setInterval(() => {
     record_frash_dim = !record_frash_dim
@@ -223,6 +223,7 @@ if (transmitter) {
   player.volume(0)
 
   initMimeType()
+  initStreamData()
 
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: true })

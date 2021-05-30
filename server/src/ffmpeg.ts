@@ -1,8 +1,6 @@
 import WebSocket from 'ws'
 import child_process from 'child_process'
 
-import { StreamInfo } from './streamstore'
-
 const logTs = () => new Date().toISOString()
 
 const logger = {
@@ -22,12 +20,22 @@ const videoTranscodeArgs = [
   '-x264-params',
   'keyint=60:scenecut=0',
 ]
+
+export interface Opts {
+  streamId: string
+  streamUrl: string
+  mimeType?: string
+}
+
 class FFmpeg {
+  private readonly ffmpeg: child_process.ChildProcessWithoutNullStreams
+
   constructor(
-    private info: StreamInfo,
-    private mimeType: string,
+    private opts: Opts,
     private onclose: (code: number | null) => void
-  ) {}
+  ) {
+    this.ffmpeg = this.startFfmpeg()
+  }
 
   public write(data: any) {
     return this.ffmpeg.stdin.write(data)
@@ -38,18 +46,13 @@ class FFmpeg {
     this.ffmpeg.stdin.end()
   }
 
-  private _ffmpeg?: child_process.ChildProcessWithoutNullStreams = undefined
-
-  private get ffmpeg(): child_process.ChildProcessWithoutNullStreams {
-    return this._ffmpeg ?? (this._ffmpeg = this.startFfmpeg())
-  }
-
   private startFfmpeg() {
+    const mimeType = this.opts.mimeType ?? ''
     const baseArgs =
-      this.mimeType.indexOf('h264') >= 0 ? videoCopyArgs : videoTranscodeArgs
+      mimeType.indexOf('h264') >= 0 ? videoCopyArgs : videoTranscodeArgs
     const ffmpeg = child_process.spawn('ffmpeg', [
       ...baseArgs,
-      this.info.streamUrl,
+      this.opts.streamUrl,
     ])
 
     ffmpeg.on('close', (code, signal) => {
@@ -65,25 +68,21 @@ class FFmpeg {
       this.logInfo(`FFmpeg stderr: ${data.toString()}`)
     })
 
-    const infoStr = JSON.stringify(this.info)
-    this.logInfo(`Piping ws through ffmpeg to stream: ${infoStr}`)
+    const optsStr = JSON.stringify(this.opts)
+    this.logInfo(`Piping ws through ffmpeg to stream: ${optsStr}`)
     return ffmpeg
   }
 
-  logErr = (msg: string) => logger.err(this.info.streamId, msg)
-  logInfo = (msg: string) => logger.info(this.info.streamId, msg)
+  logErr = (msg: string) => logger.err(this.opts.streamId, msg)
+  logInfo = (msg: string) => logger.info(this.opts.streamId, msg)
 }
 
-export function pipeWsToRtmp(
-  ws: WebSocket,
-  info: StreamInfo,
-  mimeType: string
-) {
-  const ffmpeg = new FFmpeg(info, mimeType, function onclose(code) {
+export function pipeWsToRtmp(ws: WebSocket, opts: Opts) {
+  const ffmpeg = new FFmpeg(opts, function onclose(code) {
     ws.close(1011, `ffmpeg exited with code ${code}`)
   })
   ws.on('close', (msg) => {
-    logger.info(info.streamId, `ws close ${msg}`)
+    logger.info(opts.streamId, `ws close ${msg}`)
     ffmpeg.kill()
   })
 

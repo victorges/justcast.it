@@ -1,17 +1,21 @@
-require('dotenv').config({ path: './.secrets/env'})
+require('dotenv').config({ path: './.secrets/env' })
 
-import WebSocket from 'ws'
 import path from 'path'
-import cookie from 'cookie'
 import express from 'express'
+import cookieParser from 'cookie-parser'
+import expressWs from 'express-ws'
 
 import streamstore from './streamstore'
-import { pipeWsToRtmp } from './ffmpeg'
+import * as ffmpeg from './ffmpeg'
 import { getOrCreateStream } from './streams'
+import { extractStreamKey, streamUrl } from './livepeer'
 
-const app = express()
+const { app } = expressWs(express())
+app.use(cookieParser())
 
-app.get('/api/stream/:humanId', async (req, res) => {
+const api = express.Router()
+
+api.get('/stream/:humanId', async (req, res) => {
   const id = req.params.humanId
   const info = await streamstore.getByHumanId(id)
   if (!info) {
@@ -21,6 +25,57 @@ app.get('/api/stream/:humanId', async (req, res) => {
 
   const { humanId, playbackId, playbackUrl } = info
   res.json({ humanId, playbackId, playbackUrl })
+})
+
+const streamIdCookieName = 'JustCastId'
+const cookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000
+
+api.post('/stream/init', async (req, res) => {
+  const prevStreamId = req.cookies[streamIdCookieName]
+  const {
+    humanId,
+    streamId,
+    streamKey,
+    streamUrl
+  } = await getOrCreateStream(prevStreamId)
+
+  if (!prevStreamId) {
+    res.cookie(streamIdCookieName, streamId, {
+      maxAge: cookieMaxAgeMs,
+      httpOnly: true,
+    })
+  }
+  res.json({
+    humanId,
+    streamKey: streamKey ?? extractStreamKey(streamUrl),
+  })
+})
+
+app.use('/api', api)
+
+app.ws('/ingest/ws/:streamKey', (ws, req) => {
+  console.log('wss', 'connection', req.url)
+
+  const streamId = req.cookies[streamIdCookieName] as string
+  const streamKey = req.params.streamKey
+  const mimeType = req.query['mimeType']?.toString()
+
+  if (!streamId || !streamKey) {
+    ws.close(1002, 'must send streamId on cookie and streamKey on path')
+    return
+  }
+
+  const opts: ffmpeg.Opts = {
+    streamId,
+    streamUrl: streamUrl(streamKey),
+    mimeType: mimeType,
+  }
+  ffmpeg.pipeWsToRtmp(ws, opts)
+})
+
+app.ws('*', (ws, req) => {
+  console.error('wss', 'connection', req.url)
+  ws.close(1002, 'websocket path is /ingest/ws/:streamKey')
 })
 
 const CWD = process.cwd()
@@ -46,39 +101,8 @@ app.get('*', (req, res) => {
 })
 
 const port = process.env.PORT || 8080
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log(`listening on port ${port}`)
-})
-
-const wss = new WebSocket.Server({
-  server,
-  path: '/',
-})
-
-const streamIdCookieName = 'JustCastId'
-
-wss.on('connection', async function connection(ws, req) {
-  console.error('wss', 'connection', req.url)
-
-  const cookies = cookie.parse(req.headers.cookie ?? '')
-  const prevStreamId = cookies[streamIdCookieName]
-  const info = await getOrCreateStream(prevStreamId)
-
-  const setCookie = prevStreamId ? {} : { [streamIdCookieName]: info.streamId }
-  const handshake = {
-    type: 'init',
-    humanId: info.humanId,
-    playbackId: info.playbackId,
-    setCookie
-  }
-  ws.send(JSON.stringify(handshake))
-
-  const mimematch = /mimeType=(.*)/.exec(req.url ?? '') ?? []
-  pipeWsToRtmp(ws, info, mimematch.length > 0 ? mimematch[1] : '')
-})
-
-wss.on('close', function close() {
-  console.log('wss', 'close')
 })
 
 module.exports = app
