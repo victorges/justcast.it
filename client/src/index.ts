@@ -108,7 +108,7 @@ function connect(onConnected: () => void) {
   })
 
   socket.addEventListener('close', function (event) {
-    console.log('socket', 'close', 'reason:', event.reason)
+    console.log('socket', 'close:', event.code, event.reason)
 
     connected = false
     connecting = false
