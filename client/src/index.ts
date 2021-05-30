@@ -55,7 +55,7 @@ function initMimeType() {
   // @ts-ignore
   if (!window.MediaRecorder) return
 
-  var types = [
+  const types = [
     'video/webm;codecs=h264',
     'video/webm',
     'video/webm;codecs=opus',
@@ -64,7 +64,7 @@ function initMimeType() {
     'video/mpeg',
   ]
 
-  for (var type of types) {
+  for (const type of types) {
     // @ts-ignore
     const supported = MediaRecorder.isTypeSupported(type)
     if (supported) {
