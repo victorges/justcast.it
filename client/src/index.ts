@@ -122,6 +122,10 @@ function connect(onConnected: () => void) {
 
   socket.addEventListener('open', function (event) {
     console.log('socket', 'open')
+
+    connected = true
+    connecting = false
+    onConnected()
   })
 
   socket.addEventListener('close', function (event) {
@@ -140,11 +144,6 @@ function connect(onConnected: () => void) {
     const data = JSON.parse(message)
 
     console.log('socket', 'message', data)
-
-    // we are only really connected when we receive the handshake msg from the server
-    connected = true
-    connecting = false
-    onConnected()
   })
 
   socket.addEventListener('error', (event) => {

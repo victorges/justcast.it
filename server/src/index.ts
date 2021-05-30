@@ -7,9 +7,9 @@ import express from 'express'
 import cookieParser from 'cookie-parser'
 
 import streamstore from './streamstore'
-import { pipeWsToRtmp } from './ffmpeg'
+import * as ffmpeg from './ffmpeg'
 import { getOrCreateStream } from './streams'
-import { extractStreamKey } from './livepeer'
+import { extractStreamKey, streamUrl } from './livepeer'
 
 const app = express()
 app.use(cookieParser())
@@ -90,20 +90,20 @@ wss.on('connection', async function connection(ws, req) {
   console.error('wss', 'connection', req.url)
 
   const cookies = cookie.parse(req.headers.cookie ?? '')
-  const prevStreamId = cookies[streamIdCookieName]
-  const info = await getOrCreateStream(prevStreamId)
 
-  const setCookie = prevStreamId ? {} : { [streamIdCookieName]: info.streamId }
-  const handshake = {
-    type: 'init',
-    humanId: info.humanId,
-    playbackId: info.playbackId,
-    setCookie,
-  }
-  ws.send(JSON.stringify(handshake))
-
+  const streamId = cookies[streamIdCookieName]
+  const streamKey = /streamKey=([^?&]+)/.exec(req.url ?? '') ?? []
   const mimematch = /mimeType=([^?&]+)/.exec(req.url ?? '') ?? []
-  pipeWsToRtmp(ws, info, mimematch.length > 0 ? mimematch[1] : '')
+
+  if (!streamId || streamKey.length == 0) {
+    ws.close(1002, 'must send streamId on cookie and streamKey on querystring')
+  }
+  const opts: ffmpeg.Opts = {
+    streamId,
+    streamUrl: streamUrl(streamKey[1]),
+    mimeType: mimematch.length > 0 ? mimematch[1] : undefined,
+  }
+  ffmpeg.pipeWsToRtmp(ws, opts)
 })
 
 wss.on('close', function close() {
