@@ -40,6 +40,11 @@ export const playbackUrl = (playbackId: string) =>
 export const streamUrl = (streamKey: string) =>
   `rtmp://rtmp.livepeer.com/live/${streamKey}`
 
+export const extractStreamKey = (streamUrl: string) => {
+  const matches = /rtmp:\/\/rtmp\.livepeer\.com\/live\/(.+)/.exec(streamUrl) ?? []
+  return matches.length > 0 ? matches[1] : undefined
+}
+
 export class API {
   private readonly http: AxiosInstance
 

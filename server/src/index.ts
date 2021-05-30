@@ -1,17 +1,22 @@
-require('dotenv').config({ path: './.secrets/env'})
+require('dotenv').config({ path: './.secrets/env' })
 
 import WebSocket from 'ws'
 import path from 'path'
 import cookie from 'cookie'
 import express from 'express'
+import cookieParser from 'cookie-parser'
 
 import streamstore from './streamstore'
 import { pipeWsToRtmp } from './ffmpeg'
 import { getOrCreateStream } from './streams'
+import { extractStreamKey } from './livepeer'
 
 const app = express()
+app.use(cookieParser())
 
-app.get('/api/stream/:humanId', async (req, res) => {
+const api = express.Router()
+
+api.get('/stream/:humanId', async (req, res) => {
   const id = req.params.humanId
   const info = await streamstore.getByHumanId(id)
   if (!info) {
@@ -22,6 +27,32 @@ app.get('/api/stream/:humanId', async (req, res) => {
   const { humanId, playbackId, playbackUrl } = info
   res.json({ humanId, playbackId, playbackUrl })
 })
+
+const streamIdCookieName = 'JustCastId'
+const cookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000
+
+api.post('/stream/init', async (req, res) => {
+  const prevStreamId = req.cookies[streamIdCookieName]
+  const {
+    humanId,
+    streamId,
+    streamKey,
+    streamUrl
+  } = await getOrCreateStream(prevStreamId)
+
+  if (!prevStreamId) {
+    res.cookie(streamIdCookieName, streamId, {
+      maxAge: cookieMaxAgeMs,
+      httpOnly: true,
+    })
+  }
+  res.json({
+    humanId,
+    streamKey: streamKey ?? extractStreamKey(streamUrl),
+  })
+})
+
+app.use('/api', api)
 
 const CWD = process.cwd()
 const FILE_REGEX = /.+\..+/
@@ -55,8 +86,6 @@ const wss = new WebSocket.Server({
   path: '/',
 })
 
-const streamIdCookieName = 'JustCastId'
-
 wss.on('connection', async function connection(ws, req) {
   console.error('wss', 'connection', req.url)
 
@@ -69,7 +98,7 @@ wss.on('connection', async function connection(ws, req) {
     type: 'init',
     humanId: info.humanId,
     playbackId: info.playbackId,
-    setCookie
+    setCookie,
   }
   ws.send(JSON.stringify(handshake))
 

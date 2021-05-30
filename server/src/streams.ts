@@ -11,12 +11,14 @@ const hidConfig = {
 }
 const humanIdGen = () => uniqueNamesGenerator(hidConfig).toLowerCase()
 
-const streamToInfo = (humanId: string, { id, streamKey, playbackId }: livepeer.Stream): StreamInfo => ({
+const streamToInfo = (humanId: string, stream: livepeer.Stream): StreamInfo => ({
   humanId,
-  streamId: id,
-  streamUrl: livepeer.streamUrl(streamKey),
-  playbackId,
-  playbackUrl: livepeer.playbackUrl(playbackId),
+  streamId: stream.id,
+  streamKey: stream.streamKey,
+  streamUrl: livepeer.streamUrl(stream.streamKey),
+  playbackId: stream.playbackId,
+  playbackUrl: livepeer.playbackUrl(stream.playbackId),
+  stream: stream
 })
 
 export async function getOrCreateStream(prevStreamId?: string): Promise<StreamInfo> {
