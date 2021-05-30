@@ -103,18 +103,9 @@ function send(data) {
 function connect(onConnected: () => void) {
   connecting = true
 
-  let url: string
-
-  if (localhost) {
-    url = `ws://${hostname}:8080`
-  } else {
-    if (secure) {
-      url = `wss://${hostname}:443`
-    } else {
-      url = `ws://${hostname}:8080`
-    }
-  }
-  url += `?mimeType=${_mimeType}&streamKey=${_streamKey}`
+  const protocol = !localhost && secure ? 'wss' : 'ws'
+  const portStr = localhost ? `:${port}` : ''
+  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}?mimeType=${_mimeType}`
 
   console.log('socket', 'url', url)
 

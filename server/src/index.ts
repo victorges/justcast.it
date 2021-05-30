@@ -1,17 +1,16 @@
 require('dotenv').config({ path: './.secrets/env' })
 
-import WebSocket from 'ws'
 import path from 'path'
-import cookie from 'cookie'
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import expressWs from 'express-ws'
 
 import streamstore from './streamstore'
 import * as ffmpeg from './ffmpeg'
 import { getOrCreateStream } from './streams'
 import { extractStreamKey, streamUrl } from './livepeer'
 
-const app = express()
+const { app } = expressWs(express())
 app.use(cookieParser())
 
 const api = express.Router()
@@ -54,6 +53,31 @@ api.post('/stream/init', async (req, res) => {
 
 app.use('/api', api)
 
+app.ws('/ingest/ws/:streamKey', (ws, req) => {
+  console.log('wss', 'connection', req.url)
+
+  const streamId = req.cookies[streamIdCookieName] as string
+  const streamKey = req.params.streamKey
+  const mimeType = req.query['mimeType']?.toString()
+
+  if (!streamId || !streamKey) {
+    ws.close(1002, 'must send streamId on cookie and streamKey on path')
+    return
+  }
+
+  const opts: ffmpeg.Opts = {
+    streamId,
+    streamUrl: streamUrl(streamKey),
+    mimeType: mimeType,
+  }
+  ffmpeg.pipeWsToRtmp(ws, opts)
+})
+
+app.ws('*', (ws, req) => {
+  console.error('wss', 'connection', req.url)
+  ws.close(1002, 'websocket path is /ingest/ws/:streamKey')
+})
+
 const CWD = process.cwd()
 const FILE_REGEX = /.+\..+/
 
@@ -77,37 +101,8 @@ app.get('*', (req, res) => {
 })
 
 const port = process.env.PORT || 8080
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log(`listening on port ${port}`)
-})
-
-const wss = new WebSocket.Server({
-  server,
-  path: '/',
-})
-
-wss.on('connection', async function connection(ws, req) {
-  console.error('wss', 'connection', req.url)
-
-  const cookies = cookie.parse(req.headers.cookie ?? '')
-
-  const streamId = cookies[streamIdCookieName]
-  const streamKey = /streamKey=([^?&]+)/.exec(req.url ?? '') ?? []
-  const mimematch = /mimeType=([^?&]+)/.exec(req.url ?? '') ?? []
-
-  if (!streamId || streamKey.length == 0) {
-    ws.close(1002, 'must send streamId on cookie and streamKey on querystring')
-  }
-  const opts: ffmpeg.Opts = {
-    streamId,
-    streamUrl: streamUrl(streamKey[1]),
-    mimeType: mimematch.length > 0 ? mimematch[1] : undefined,
-  }
-  ffmpeg.pipeWsToRtmp(ws, opts)
-})
-
-wss.on('close', function close() {
-  console.log('wss', 'close')
 })
 
 module.exports = app
