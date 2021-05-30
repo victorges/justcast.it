@@ -6,3 +6,4 @@ npm-debug.log
 .env
 .env.test
 secrets
+.secrets
