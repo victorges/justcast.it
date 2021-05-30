@@ -102,7 +102,7 @@ wss.on('connection', async function connection(ws, req) {
   }
   ws.send(JSON.stringify(handshake))
 
-  const mimematch = /mimeType=(.*)/.exec(req.url ?? '') ?? []
+  const mimematch = /mimeType=([^?&]+)/.exec(req.url ?? '') ?? []
   pipeWsToRtmp(ws, info, mimematch.length > 0 ? mimematch[1] : '')
 })
 
