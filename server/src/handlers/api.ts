@@ -1,9 +1,9 @@
 
 import express from 'express'
 
-import streamstore from '../streamstore'
-import { getOrCreateStream } from '../streams'
-import { extractStreamKey } from '../livepeer'
+import streamstore from '../clients/streamstore'
+import { getOrCreateStream } from '../clients/streams'
+import { extractStreamKey } from '../clients/livepeer'
 import { streamIdCookieName } from './common'
 
 const api = express.Router()

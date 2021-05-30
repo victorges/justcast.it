@@ -1,7 +1,7 @@
 import express from 'express'
 
-import * as ffmpeg from '../ffmpeg'
-import { streamUrl } from '../livepeer'
+import * as ffmpeg from '../clients/ffmpeg'
+import { streamUrl } from '../clients/livepeer'
 import { streamIdCookieName } from './common'
 
 const websocket = express.Router()
