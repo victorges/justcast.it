@@ -100,7 +100,7 @@ function send(data) {
   socket.send(data)
 }
 
-function connect(onConnected: () => void) {
+function connect(onOpen: (event: Event) => void, onClose: (event: CloseEvent) => void) {
   connecting = true
 
   const protocol = !localhost && secure ? 'wss' : 'ws'
@@ -116,7 +116,7 @@ function connect(onConnected: () => void) {
 
     connected = true
     connecting = false
-    onConnected()
+    onOpen(event)
   })
 
   socket.addEventListener('close', function (event) {
@@ -125,9 +125,7 @@ function connect(onConnected: () => void) {
     connected = false
     connecting = false
 
-    if (recording) {
-      stop_recording()
-    }
+    onClose(event)
   })
 
   socket.addEventListener('message', (event) => {
@@ -151,7 +149,9 @@ let media_recorder = null
 
 let record_frash_dim = false
 
-function start_recording(stream) {
+const minRetryThreshold = 60 * 1000 // 1 min
+
+function start_recording(stream: MediaStream) {
   // console.log('start_recording', stream)
   // @ts-ignore
   if (recording || !window.MediaRecorder || !_mimeType || !_streamKey) return
@@ -163,13 +163,23 @@ function start_recording(stream) {
     mimeType: _mimeType,
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
-
   media_recorder.start(2000)
 
-  connect(() => {
+  const connectTime = Date.now()
+  connect(openEvent => {
     media_recorder.ondataavailable = function (event) {
       const { data } = event
-      if (recording) send(data)
+      if (recording && connected) send(data)
+    }
+  }, closeEvent => {
+    if (!recording) return
+    stop_recording()
+
+    const connectionAge = Date.now() - connectTime
+    const shouldRetry = closeEvent.code === 1006 && connectionAge >= minRetryThreshold
+    if (shouldRetry) {
+      console.log('restarting streaming due to ws 1006 error')
+      start_recording(stream)
     }
   })
 
