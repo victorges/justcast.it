@@ -119,7 +119,7 @@ function initMimeType() {
     }
   }
 
-  console.log('using mimeType', _mimeType)
+  console.log('mimeType', _mimeType)
 }
 
 async function initStreamData() {
@@ -225,7 +225,7 @@ function start_recording(stream: MediaStream) {
       const shouldRetry =
         code === 1011 || (code === 1006 && connectionAge >= minRetryThreshold)
       if (shouldRetry) {
-        console.log('restarting streaming due to ws 1006 error')
+        console.log(`restarting streaming due to ws ${code} error`)
         start_recording(stream)
       }
     }
@@ -335,19 +335,6 @@ function setup_media_recorder(stream: MediaStream): void {
       send(data)
     }
   }
-}
-
-function setup_media_recorder_listener() {
-  media_recorder.ondataavailable = function (event) {
-    const { data } = event
-    if (recording && connected) {
-      send(data)
-    }
-  }
-}
-
-function plunk_media_recorder_listener() {
-  media_recorder.ondataavailable = null
 }
 
 function set_video_stream(stream: MediaStream): void {
