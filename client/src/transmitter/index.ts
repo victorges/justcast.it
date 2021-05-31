@@ -95,7 +95,7 @@ let _streamKey: string | undefined
 
 let _mimeType: string | undefined
 
-function initMimeType() {
+function init_mime_type() {
   // @ts-ignore
   if (!window.MediaRecorder) {
     return
@@ -222,8 +222,7 @@ function start_recording(stream: MediaStream) {
       stop_recording()
 
       const connectionAge = Date.now() - connectTime
-      const shouldRetry =
-        code === 1011 || (code === 1006 && connectionAge >= minRetryThreshold)
+      const shouldRetry = (code === 1006 && connectionAge >= minRetryThreshold)
       if (shouldRetry) {
         console.log(`restarting streaming due to ws ${code} error`)
         start_recording(stream)
@@ -322,6 +321,8 @@ async function set_media_to_user(): Promise<MediaStream> {
 
 function setup_media_recorder(stream: MediaStream): void {
   console.log('setup_media_recorder', stream)
+  init_mime_type()
+
   // @ts-ignore
   media_recorder = new MediaRecorder(stream, {
     mimeType: _mimeType,
@@ -346,7 +347,6 @@ video.style.transition = 'opacity 0.2s linear'
 
 video.volume = 0
 
-initMimeType()
 initStreamData()
 
 set_media_to_user()
