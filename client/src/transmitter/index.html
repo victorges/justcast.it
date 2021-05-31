@@ -9,15 +9,10 @@
 
     <base href="/transmitter/">
 
-    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
-    <link
-      href="https://unpkg.com/@silvermine/videojs-quality-selector/dist/css/quality-selector.css"
-      rel="stylesheet"
-    />
-
     <link href="index.css" rel="stylesheet" />
   </head>
   <body>
+    <canvas id="canvas" class="canvas" width="100" height="100"></canvas>
     <video
       id="video"
       class="video-js vjs-default-skin"
@@ -31,8 +26,6 @@
       <div id="media" class="media"></div>
     </div>
     <div id="playbackUrl"></div>
-    <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
-    <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
   </body>
   <script src="bundle.js"></script>
 </html>
