@@ -56,7 +56,6 @@ let _streamKey: string | undefined
 let _mimeType: string | undefined
 
 function initMimeType() {
-  // @ts-ignore
   if (!window.MediaRecorder) {
     return
   }
@@ -71,7 +70,6 @@ function initMimeType() {
   ]
 
   for (const type of types) {
-    // @ts-ignore
     const supported = MediaRecorder.isTypeSupported(type)
     if (supported) {
       _mimeType = type
@@ -162,7 +160,6 @@ const minRetryThreshold = 60 * 1000 // 1 min
 
 function start_recording(stream: MediaStream) {
   // console.log('start_recording', stream)
-  // @ts-ignore
   if (recording || !window.MediaRecorder || !_mimeType || !_streamKey) return
 
   recording = true
@@ -283,7 +280,6 @@ function setup_media_recorder(stream: MediaStream): void {
     plunk_media_recorder_listener()
   }
 
-  // @ts-ignore
   media_recorder = new MediaRecorder(stream, {
     mimeType: _mimeType,
     videoBitsPerSecond: 3 * 1024 * 1024,
