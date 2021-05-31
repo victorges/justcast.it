@@ -9,8 +9,8 @@
     "build": "yarn clean; run-p build:copy build:bundle",
     "watch": "yarn clean; run-p watch:copy watch:bundle",
     "clean": "rm -rf ../dist/public",
-    "build:copy": "rsync -r --exclude '*.ts' src/* ../dist/public",
-    "watch:copy": "nodemon --watch src --ext html,css --exec 'run-s build:copy'",
+    "build:copy": "mkdir -p ../dist/public && copy-and-watch src/*.{html,css,json} ../dist/public",
+    "watch:copy": "mkdir -p ../dist/public && copy-and-watch --watch src/*.{html,css,json} ../dist/public",
     "build:bundle": "run-p build:bundle:transmitter build:bundle:receiver",
     "watch:bundle": "run-p watch:bundle:transmitter watch:bundle:receiver",
     "build:bundle:transmitter": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/transmitter/index.ts --outfile=../dist/public/transmitter/bundle.js",
@@ -24,8 +24,8 @@
     "is-ip": "^3.1.0"
   },
   "devDependencies": {
+    "copy-and-watch": "^0.1.5",
     "esbuild": "0.12.3",
-    "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.2"
