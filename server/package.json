@@ -7,7 +7,7 @@
   "scripts": {
     "start": "cd .. && ts-node server/src/index.ts",
     "build": "tsc",
-    "watch": "nodemon --watch src --ext ts --exec 'run-s start'"
+    "watch": "cd .. && ts-node-dev --project server/tsconfig.json server/src/index.ts"
   },
   "engines": {
     "node": ">= 12.0.0"
@@ -29,8 +29,8 @@
     "@types/express": "^4.17.12",
     "@types/express-ws": "^3.0.0",
     "@types/ws": "^7.4.4",
-    "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
+    "ts-node-dev": "^1.1.6",
     "typescript": "^4.3.2"
   }
 }
