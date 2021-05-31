@@ -67,6 +67,7 @@ function initMimeType() {
     'video/webm;codecs=vp8',
     'video/webm;codecs=daala',
     'video/mpeg',
+    'video/mp4',
   ]
 
   for (const type of types) {
