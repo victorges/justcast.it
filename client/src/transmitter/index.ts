@@ -207,11 +207,11 @@ function start_recording(stream: MediaStream) {
 
   recording = true
 
-  media_recorder.start(MEDIA_RECORDER_T)
-
   const connectTime = Date.now()
   connect(
-    (openEvent) => {},
+    (openEvent) => {
+      media_recorder.start(MEDIA_RECORDER_T)
+    },
     (closeEvent) => {
       if (!recording) {
         return
@@ -331,9 +331,23 @@ function setup_media_recorder(stream: MediaStream): void {
   media_recorder.ondataavailable = function (event) {
     const { data } = event
     if (recording && connected) {
+      console.log('send')
       send(data)
     }
   }
+}
+
+function setup_media_recorder_listener() {
+  media_recorder.ondataavailable = function (event) {
+    const { data } = event
+    if (recording && connected) {
+      send(data)
+    }
+  }
+}
+
+function plunk_media_recorder_listener() {
+  media_recorder.ondataavailable = null
 }
 
 function set_video_stream(stream: MediaStream): void {
