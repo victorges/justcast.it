@@ -113,7 +113,8 @@ function connect(
 
   const protocol = !localhost && secure ? 'wss' : 'ws'
   const portStr = localhost ? `:${port}` : ''
-  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}?mimeType=${_mimeType}`
+  const query = _mimeType ? `?mimeType=${_mimeType}` : ''
+  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}${query}`
 
   console.log('socket', 'url', url)
 
@@ -161,7 +162,7 @@ const minRetryThreshold = 60 * 1000 // 1 min
 
 function start_recording(stream: MediaStream) {
   // console.log('start_recording', stream)
-  if (recording || !window.MediaRecorder || !_mimeType || !_streamKey) return
+  if (recording || !window.MediaRecorder || !_streamKey) return
 
   recording = true
 
