@@ -56,7 +56,6 @@ let _streamKey: string | undefined
 let _mimeType: string | undefined
 
 function initMimeType() {
-  // @ts-ignore
   if (!window.MediaRecorder) {
     return
   }
@@ -68,10 +67,10 @@ function initMimeType() {
     'video/webm;codecs=vp8',
     'video/webm;codecs=daala',
     'video/mpeg',
+    'video/mp4',
   ]
 
   for (const type of types) {
-    // @ts-ignore
     const supported = MediaRecorder.isTypeSupported(type)
     if (supported) {
       _mimeType = type
@@ -114,7 +113,8 @@ function connect(
 
   const protocol = !localhost && secure ? 'wss' : 'ws'
   const portStr = localhost ? `:${port}` : ''
-  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}?mimeType=${_mimeType}`
+  const query = _mimeType ? `?mimeType=${_mimeType}` : ''
+  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}${query}`
 
   console.log('socket', 'url', url)
 
@@ -162,8 +162,7 @@ const minRetryThreshold = 60 * 1000 // 1 min
 
 function start_recording(stream: MediaStream) {
   // console.log('start_recording', stream)
-  // @ts-ignore
-  if (recording || !window.MediaRecorder || !_mimeType || !_streamKey) return
+  if (recording || !window.MediaRecorder || !_streamKey) return
 
   recording = true
 
@@ -266,7 +265,10 @@ async function set_media_to_user(): Promise<MediaStream> {
 
   return new Promise((resolve, reject) => {
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
+      .getUserMedia({
+        video: true,
+        audio: { echoCancellation: true, noiseSuppression: true },
+      })
       .then((stream) => {
         set_video_stream(stream)
         resolve(stream)
@@ -283,9 +285,9 @@ function setup_media_recorder(stream: MediaStream): void {
     plunk_media_recorder_listener()
   }
 
-  // @ts-ignore
   media_recorder = new MediaRecorder(stream, {
     mimeType: _mimeType,
+    audioBitsPerSecond: 128 * 1024,
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
 

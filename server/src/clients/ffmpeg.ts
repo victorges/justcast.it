@@ -10,7 +10,8 @@ const logger = {
     console.error(`[${logTs()}][stream-${streamId}] ${msg}`),
 }
 
-const baseArgs = ['-i', '-', '-acodec', 'aac', '-f', 'flv']
+const audioArgs = ['-acodec', 'aac', '-b:a', '128k', '-ar', '44100']
+const baseArgs = ['-i', '-', '-f', 'flv', ...audioArgs]
 
 const videoCopyArgs = [...baseArgs, '-vcodec', 'copy']
 const videoTranscodeArgs = [

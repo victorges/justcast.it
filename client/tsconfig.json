@@ -14,12 +14,12 @@
     "noUnusedParameters": false,
     "noImplicitAny": false,
     "declaration": true,
-    "typeRoots": ["node_modules/@types"],
+    "typeRoots": ["node_modules/@types", "../node_modules/@types"],
     "resolveJsonModule": true
   },
   "typeAcquisition": {
     "enable": false
   },
-  "include": ["./src/**/*.ts"],
+  "include": ["../node_modules/@types", "./src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
