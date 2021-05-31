@@ -5,6 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <base href="/receiver/">
+
     <title>Just Cast It</title>
 
     <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
@@ -13,7 +15,7 @@
       rel="stylesheet"
     />
 
-    <link href="./index.css" rel="stylesheet" />
+    <link href="index.css" rel="stylesheet" />
   </head>
   <body>
     <video
@@ -22,12 +24,8 @@
       autoplay
       data-setup='{ "controls": false, "autoplay": true, "preload": "auto" }'
     ></video>
-    <div id="record-container" class="record-container">
-      <div id="record" class="record"></div>
-    </div>
-    <div id="playbackUrl"></div>
     <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
     <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
   </body>
-  <script src="./bundle.js"></script>
+  <script src="bundle.js"></script>
 </html>

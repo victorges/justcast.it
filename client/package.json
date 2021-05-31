@@ -6,12 +6,17 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "ts-node src/server/index.ts",
-    "build": "run-p build:copy build:bundle",
-    "watch": "run-p watch:copy watch:bundle",
-    "build:copy": "rsync --exclude '*.ts' src/* ../dist/public",
+    "build": "yarn clean; run-p build:copy build:bundle",
+    "watch": "yarn clean; run-p watch:copy watch:bundle",
+    "clean": "rm -rf ../dist/public",
+    "build:copy": "rsync -r --exclude '*.ts' src/* ../dist/public",
     "watch:copy": "nodemon --watch src --ext html,css --exec 'run-s build:copy'",
-    "build:bundle": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/index.ts --outfile=../dist/public/bundle.js",
-    "watch:bundle": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/index.ts --outfile=../dist/public/bundle.js"
+    "build:bundle": "run-p build:bundle:transmitter build:bundle:receiver",
+    "watch:bundle": "run-p watch:bundle:transmitter watch:bundle:receiver",
+    "build:bundle:transmitter": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/transmitter/index.ts --outfile=../dist/public/transmitter/bundle.js",
+    "watch:bundle:transmitter": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/transmitter/index.ts --outfile=../dist/public/transmitter/bundle.js",
+    "build:bundle:receiver": "esbuild --define:process.env.NODE_ENV=\"production\" --minify --bundle --log-level=error src/receiver/index.ts --outfile=../dist/public/receiver/bundle.js",
+    "watch:bundle:receiver": "esbuild --define:process.env.NODE_ENV=\"development\" --watch --sourcemap --bundle --log-level=error src/receiver/index.ts --outfile=../dist/public/receiver/bundle.js"
   },
   "author": "Neolag Fresh Ventures",
   "license": "MIT",

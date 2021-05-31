@@ -10,18 +10,35 @@ const isFilename = (str: string) => {
   return FILE_REGEX.test(str)
 }
 
+// files.use('receiver', express.static('public/receiver'))
+// files.use('transmitter', express.static('public/transmitter'))
+
 files.get('*', (req, res) => {
   const { url } = req
-  const url_segments = url.split('/')
+
+  const url_segments = url.split('/').slice(1)
   const url_segments_length = url_segments.length
+
+  const url_first_segment = url_segments[0]
+
+  let subfolder: string
+  if (url_first_segment === '' || url_first_segment === 'transmitter') {
+    subfolder = 'transmitter'
+  } else {
+    subfolder = 'receiver'
+  }
+
   const url_last_segment = url_segments[url_segments_length - 1] || ''
-  let file_name
+
+  let file_name: string
   if (isFilename(url_last_segment)) {
     file_name = url_last_segment
   } else {
     file_name = 'index.html'
   }
-  const file_path = path.join(CWD, 'dist/public', file_name)
+
+  const file_path = path.join(CWD, 'dist/public', subfolder, file_name)
+
   res.sendFile(file_path)
 })
 

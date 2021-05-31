@@ -1,6 +1,6 @@
 import isIp from 'is-ip'
 
-import { copyToClipboard } from './clipboard'
+import { copyToClipboard } from '../clipboard'
 
 const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
@@ -13,6 +13,11 @@ const playbackUrl = document.getElementById('playbackUrl')
 
 const record_container = document.getElementById('record-container')
 const record = document.getElementById('record')
+
+const media_container = document.getElementById('media-container')
+const media = document.getElementById('media')
+
+let media_display = false
 
 playbackUrl.onclick = () => {
   copyToClipboard(playbackUrl.innerText)
@@ -30,14 +35,12 @@ const { hostname, pathname, port, protocol } = location
 
 console.log('protocol', protocol)
 console.log('hostname', hostname)
+console.log('port', port)
 console.log('pathname', pathname)
 
 const localhost = isLocalHost(hostname) || isIp(hostname)
 
 const secure = protocol === 'https:'
-
-const transmitter = pathname === '/'
-const receiver = !transmitter
 
 let socket: WebSocket = null
 let connected = false
@@ -54,7 +57,9 @@ let _mimeType: string | undefined
 
 function initMimeType() {
   // @ts-ignore
-  if (!window.MediaRecorder) return
+  if (!window.MediaRecorder) {
+    return
+  }
 
   const types = [
     'video/webm;codecs=h264',
@@ -79,6 +84,7 @@ function initMimeType() {
 
 async function initStreamData() {
   const res = await fetch(`/api/stream/init`, { method: 'POST' })
+
   if (res.status !== 200) {
     throw new Error('Bad init API status code: ' + res.status)
   }
@@ -100,7 +106,10 @@ function send(data) {
   socket.send(data)
 }
 
-function connect(onOpen: (event: Event) => void, onClose: (event: CloseEvent) => void) {
+function connect(
+  onOpen: (event: Event) => void,
+  onClose: (event: CloseEvent) => void
+) {
   connecting = true
 
   const protocol = !localhost && secure ? 'wss' : 'ws'
@@ -158,32 +167,30 @@ function start_recording(stream: MediaStream) {
 
   recording = true
 
-  // @ts-ignore
-  media_recorder = new MediaRecorder(stream, {
-    mimeType: _mimeType,
-    videoBitsPerSecond: 3 * 1024 * 1024,
-  })
-  media_recorder.start(2000)
+  setup_media_recorder(stream)
 
   const connectTime = Date.now()
-  connect(openEvent => {
-    media_recorder.ondataavailable = function (event) {
-      const { data } = event
-      if (recording && connected) send(data)
+  connect(
+    (openEvent) => {
+      setup_media_recorder_listener()
+    },
+    (closeEvent) => {
+      // if (!recording) {
+      //   return
+      // }
+      // stop_recording()
+      // const connectionAge = Date.now() - connectTime
+      // const shouldRetry =
+      //   closeEvent.code === 1006 && connectionAge >= minRetryThreshold
+      // if (shouldRetry) {
+      //   console.log('restarting streaming due to ws 1006 error')
+      //   start_recording(stream)
+      // }
     }
-  }, closeEvent => {
-    if (!recording) return
-    stop_recording()
-
-    const connectionAge = Date.now() - connectTime
-    const shouldRetry = closeEvent.code === 1006 && connectionAge >= minRetryThreshold
-    if (shouldRetry) {
-      console.log('restarting streaming due to ws 1006 error')
-      start_recording(stream)
-    }
-  })
+  )
 
   record.style.background = '#dd0000'
+  record.style.borderColor = '#dd0000'
 
   video.style.opacity = '1'
 
@@ -203,6 +210,10 @@ function start_recording(stream: MediaStream) {
 let record_flash_interval
 
 function stop_recording() {
+  if (!recording) {
+    return
+  }
+
   recording = false
 
   media_recorder.stop()
@@ -216,54 +227,124 @@ function stop_recording() {
   clearInterval(record_flash_interval)
 }
 
-if (transmitter) {
-  video.style.opacity = '0.5'
-  video.style.transition = 'opacity 0.2s linear'
+function refresh_recording(stream: MediaStream): void {
+  if (recording) {
+    stop_recording()
+  }
 
-  player.volume(0)
+  start_recording(stream)
+}
 
-  initMimeType()
-  initStreamData()
+async function set_media_to_display(): Promise<MediaStream> {
+  console.log('set_media_to_display')
+  media_display = true
 
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      _stream = stream
+  media.style.borderRadius = '3px'
+  media_container.style.borderRadius = '6px'
 
-      const video = player.tech().el()
-      video.srcObject = stream
-    })
-    .catch((err) => {
-      console.log('navigator', 'mediaDevices', 'err', err)
-    })
+  return new Promise((resolve, reject) => {
+    navigator.mediaDevices
+      // @ts-ignore
+      .getDisplayMedia({ audio: true, video: true })
+      .then((stream: MediaStream) => {
+        set_video_stream(stream)
+        resolve(stream)
+      })
+      .catch((err) => {
+        console.log('navigator', 'getDisplayMedia', 'error', err)
+        reject(err)
+      })
+  })
+}
 
-  record_container.style.display = 'block'
+async function set_media_to_user(): Promise<MediaStream> {
+  console.log('set_media_to_user')
+  media_display = false
 
-  record_container.onclick = () => {
-    if (recording) {
-      stop_recording()
-    } else {
-      start_recording(_stream)
+  media_container.style.borderRadius = '30px'
+  media.style.borderRadius = '15px'
+
+  return new Promise((resolve, reject) => {
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        set_video_stream(stream)
+        resolve(stream)
+      })
+      .catch((err) => {
+        console.log('navigator', 'mediaDevices', 'err', err)
+        reject(err)
+      })
+  })
+}
+
+function setup_media_recorder(stream: MediaStream): void {
+  if (media_recorder) {
+    plunk_media_recorder_listener()
+  }
+
+  // @ts-ignore
+  media_recorder = new MediaRecorder(stream, {
+    mimeType: _mimeType,
+    videoBitsPerSecond: 3 * 1024 * 1024,
+  })
+
+  media_recorder.start(2000)
+
+  if (connected) {
+    setup_media_recorder_listener()
+  }
+}
+
+function setup_media_recorder_listener(): void {
+  media_recorder.ondataavailable = function (event) {
+    const { data } = event
+    if (recording && connected) {
+      send(data)
     }
   }
-} else {
-  player.volume(1)
-  player.controls(true)
+}
 
-  const humanId = pathname.substr(1)
-  fetch(`/api/stream/${humanId}`)
-    .then((res) => {
-      if (res.status === 200) {
-        return res.json()
-      }
-      const playbackUrl = `https://cdn.livepeer.com/hls/${humanId}/index.m3u8`
-      return { playbackUrl }
-    })
-    .then((info) => {
-      player.src({
-        src: info.playbackUrl,
-        type: 'application/x-mpegURL',
-        withCredentials: false,
-      })
-    })
+function plunk_media_recorder_listener(): void {
+  media_recorder.ondataavailable = null
+}
+
+function set_video_stream(stream: MediaStream): void {
+  _stream = stream
+
+  const video = player.tech().el()
+  video.srcObject = stream
+}
+
+video.style.opacity = '0.5'
+video.style.transition = 'opacity 0.2s linear'
+
+player.volume(0)
+
+initMimeType()
+initStreamData()
+
+set_media_to_user()
+// set_media_to_display()
+
+record_container.style.display = 'block'
+
+record_container.onclick = () => {
+  if (recording) {
+    stop_recording()
+  } else {
+    start_recording(_stream)
+  }
+}
+
+media_container.style.display = 'block'
+
+media_container.onclick = async () => {
+  if (media_display) {
+    const stream = await set_media_to_user()
+    refresh_recording(stream)
+  } else {
+    const stream = await set_media_to_display()
+    refresh_recording(stream)
+  }
 }
