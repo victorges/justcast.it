@@ -43,6 +43,7 @@ body {
   transform: translateX(-50%);
   user-select: none;
   pointer-events: none;
+  max-width: 80%;
 }
 
 #playbackUrl.visible {
@@ -83,6 +84,7 @@ body {
   opacity: 0.5;
   pointer-events: all;
   transition: opacity 0.2s linear, border-radius 0.2s linear;
+  cursor: pointer;
 }
 
 .media-container {

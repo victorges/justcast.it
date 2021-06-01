@@ -220,6 +220,7 @@ function stop_recording() {
 
   record.style.opacity = '1'
   record.style.background = '#dddddd'
+  record.style.borderColor = '#dddddd'
 
   video.style.opacity = '0.5'
 
