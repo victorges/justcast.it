@@ -10,8 +10,10 @@ const isFilename = (str: string) => {
   return FILE_REGEX.test(str)
 }
 
-// files.use('receiver', express.static('public/receiver'))
-// files.use('transmitter', express.static('public/transmitter'))
+files.get('*', (req, res, next) => {
+  res.set('Feature-Policy', "camera *; microphone *;")
+  next()
+})
 
 files.get('*', (req, res) => {
   const { url } = req
