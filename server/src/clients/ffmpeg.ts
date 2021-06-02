@@ -4,10 +4,10 @@ import child_process from 'child_process'
 const logTs = () => new Date().toISOString()
 
 const logger = {
-  info: (streamId: string, msg: string) =>
-    console.log(`[${logTs()}][stream-${streamId}] ${msg}`),
-  err: (streamId: string, msg: string) =>
-    console.error(`[${logTs()}][stream-${streamId}] ${msg}`),
+  info: (logNs: string, msg: string) =>
+    console.log(`[${logTs()}][${logNs}] ${msg}`),
+  err: (logNs: string, msg: string) =>
+    console.error(`[${logTs()}][${logNs}] ${msg}`),
 }
 
 const audioArgs = ['-acodec', 'aac', '-b:a', '128k', '-ar', '44100']
@@ -23,7 +23,7 @@ const videoTranscodeArgs = [
 ]
 
 export interface Opts {
-  streamId: string
+  logNs: string
   streamUrl: string
   mimeType?: string
 }
@@ -74,8 +74,8 @@ class FFmpeg {
     return ffmpeg
   }
 
-  logErr = (msg: string) => logger.err(this.opts.streamId, msg)
-  logInfo = (msg: string) => logger.info(this.opts.streamId, msg)
+  logErr = (msg: string) => logger.err(this.opts.logNs, msg)
+  logInfo = (msg: string) => logger.info(this.opts.logNs, msg)
 }
 
 export function pipeWsToRtmp(ws: WebSocket, opts: Opts) {
@@ -83,7 +83,7 @@ export function pipeWsToRtmp(ws: WebSocket, opts: Opts) {
     ws.close(1011, `ffmpeg exited with code ${code}`)
   })
   ws.on('close', (msg) => {
-    logger.info(opts.streamId, `ws close ${msg}`)
+    logger.info(opts.logNs, `ws close ${msg}`)
     ffmpeg.kill()
   })
 

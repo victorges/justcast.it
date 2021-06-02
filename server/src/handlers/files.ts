@@ -24,7 +24,7 @@ files.get('*', (req, res) => {
   const url_first_segment = url_segments[0]
 
   let subfolder: string
-  if (url_first_segment === '' || url_first_segment === 'transmitter') {
+  if (['', 'transmitter', 'to'].includes(url_first_segment)) {
     subfolder = 'transmitter'
   } else {
     subfolder = 'receiver'

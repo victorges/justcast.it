@@ -9,19 +9,20 @@ const websocket = express.Router()
 websocket.ws('/ingest/ws/:streamKey', (ws, req) => {
   console.log('wss', 'connection', req.url)
 
-  const streamId = req.cookies[streamIdCookieName] as string
+  const ignoreCookies = req.query['ignoreCookies'] === 'true'
+  const streamId = ignoreCookies ? null : req.cookies[streamIdCookieName] as string
   const streamKey = req.params.streamKey
   const mimeType = req.query['mimeType']?.toString()
 
-  if (!streamId || !streamKey) {
-    ws.close(1002, 'must send streamId on cookie and streamKey on path')
+  if (!streamKey) {
+    ws.close(1002, 'must send streamKey on path')
     return
   }
 
   const opts: ffmpeg.Opts = {
-    streamId,
+    logNs: streamId ? `stream-${streamId}` : `streamKey-${streamKey}`,
     streamUrl: streamUrl(streamKey),
-    mimeType: mimeType,
+    mimeType,
   }
   ffmpeg.pipeWsToRtmp(ws, opts)
 })

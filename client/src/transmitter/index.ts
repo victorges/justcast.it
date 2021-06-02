@@ -82,6 +82,13 @@ function initMimeType() {
 }
 
 async function initStreamData() {
+  const segments = location.pathname.substr(1).split('/', 2)
+  if (segments.length == 2 && segments[0] === 'to') {
+    _streamKey = segments[1]
+    _playbackId = undefined
+    return
+  }
+
   const res = await fetch(`/api/stream/init`, { method: 'POST' })
 
   if (res.status !== 200) {
@@ -105,6 +112,15 @@ function send(data) {
   socket.send(data)
 }
 
+function querystring(params: Record<string, any>) {
+  const escape = encodeURIComponent
+  const raw = Object.keys(params)
+    .filter((k) => !!params[k])
+    .map((k) => escape(k) + '=' + escape(params[k].toString()))
+    .join('&')
+  return raw.length === 0 ? '' : '?' + raw
+}
+
 function connect(
   onOpen: (event: Event) => void,
   onClose: (event: CloseEvent) => void
@@ -113,7 +129,10 @@ function connect(
 
   const protocol = !localhost && secure ? 'wss' : 'ws'
   const portStr = localhost ? `:${port}` : ''
-  const query = _mimeType ? `?mimeType=${_mimeType}` : ''
+  const query = querystring({
+    mimeType: _mimeType,
+    ignoreCookies: !_playbackId,
+  })
   const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}${query}`
 
   console.log('socket', 'url', url)
@@ -193,7 +212,7 @@ function start_recording(stream: MediaStream) {
 
   video.style.opacity = '1'
 
-  playbackUrl.classList.add('visible')
+  if (_playbackId) playbackUrl.classList.add('visible')
 
   record_flash_interval = setInterval(() => {
     record_frash_dim = !record_frash_dim
