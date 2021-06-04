@@ -13,8 +13,7 @@ steps:
       - $_SERVICE_NAME
       - '--platform=managed'
       - '--image=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
-      - >-
-        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID,$_LABELS
+      - '--labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID,$_LABELS'
       - '--region=$_DEPLOY_REGION'
       - '--quiet'
     id: Deploy
@@ -22,13 +21,9 @@ steps:
 options:
   substitutionOption: ALLOW_LOOSE
 substitutions:
-  _LABELS: gcb-trigger-id=aa54e483-f630-420d-855f-78978eb9653e
-  _TRIGGER_ID: aa54e483-f630-420d-855f-78978eb9653e
   _DEPLOY_REGION: us-east4
   _GCR_HOSTNAME: us.gcr.io
-  _PLATFORM: managed
-  _SERVICE_NAME: justcast-it-next
 tags:
   - gcp-cloud-build-deploy-cloud-run
   - gcp-cloud-build-deploy-cloud-run-managed
-  - justcast-it-next
+  - $_SERVICE_NAME
