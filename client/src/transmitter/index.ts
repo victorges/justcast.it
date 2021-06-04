@@ -19,6 +19,8 @@ const media = document.getElementById('media')
 
 let media_display = false
 
+let media_display_returned = false
+
 playbackUrl.onclick = () => {
   copyToClipboard(playbackUrl.innerText)
 }
@@ -78,7 +80,7 @@ function initMimeType() {
     }
   }
 
-  console.log('using mimeType', _mimeType)
+  console.log('_mimeType', _mimeType)
 }
 
 async function initStreamData() {
@@ -106,9 +108,6 @@ async function initStreamData() {
 }
 
 function send(data) {
-  if (!connected) {
-    throw new Error('WebSocket is not connected')
-  }
   socket.send(data)
 }
 
@@ -144,6 +143,7 @@ function connect(
 
     connected = true
     connecting = false
+
     onOpen(event)
   })
 
@@ -180,8 +180,11 @@ let record_frash_dim = false
 const minRetryThreshold = 60 * 1000 // 1 min
 
 function start_recording(stream: MediaStream) {
-  // console.log('start_recording', stream)
-  if (recording || !window.MediaRecorder || !_streamKey) return
+  if (recording || !window.MediaRecorder || !_streamKey) {
+    return
+  }
+
+  console.log('start_recording')
 
   recording = true
 
@@ -190,20 +193,27 @@ function start_recording(stream: MediaStream) {
   const connectTime = Date.now()
   connect(
     (openEvent) => {
-      setup_media_recorder_listener()
+      if (recording) {
+        start_media_recorder()
+      }
     },
     (closeEvent) => {
-      // if (!recording) {
-      //   return
-      // }
-      // stop_recording()
-      // const connectionAge = Date.now() - connectTime
-      // const shouldRetry =
-      //   closeEvent.code === 1006 && connectionAge >= minRetryThreshold
-      // if (shouldRetry) {
-      //   console.log('restarting streaming due to ws 1006 error')
-      //   start_recording(stream)
-      // }
+      if (!recording) {
+        return
+      }
+
+      const { code } = closeEvent
+
+      if (code !== 1000) {
+        stop_recording()
+      }
+
+      const connectionAge = Date.now() - connectTime
+      const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
+      if (shouldRetry) {
+        console.log('restarting streaming due to ws 1006 error')
+        start_recording(stream)
+      }
     }
   )
 
@@ -232,9 +242,13 @@ function stop_recording() {
     return
   }
 
+  console.log('stop_recording')
+
   recording = false
 
-  media_recorder.stop()
+  media_recorder.ondataavailable = null
+  stop_media_recorder()
+
   disconnect(1000)
 
   record.style.opacity = '1'
@@ -247,62 +261,93 @@ function stop_recording() {
 }
 
 function refresh_recording(stream: MediaStream): void {
-  if (recording) {
+  if (recording && connected) {
     stop_recording()
+    start_recording(stream)
   }
-
-  start_recording(stream)
 }
 
 async function set_media_to_display(): Promise<MediaStream> {
   console.log('set_media_to_display')
+
   media_display = true
+  media_display_returned = false
 
-  media.style.borderRadius = '3px'
-  media_container.style.borderRadius = '6px'
+  let stream: MediaStream
 
-  return new Promise((resolve, reject) => {
-    navigator.mediaDevices
+  try {
+    stream = await navigator.mediaDevices
       // @ts-ignore
       .getDisplayMedia({ audio: true, video: true })
-      .then((stream: MediaStream) => {
-        set_video_stream(stream)
-        resolve(stream)
-      })
-      .catch((err) => {
-        console.log('navigator', 'getDisplayMedia', 'error', err)
-        reject(err)
-      })
-  })
-}
+  } catch (err) {
+    console.log('navigator', 'getDisplayMedia', 'error', err)
+    media_display = false
+    return
+  }
 
-async function set_media_to_user(): Promise<MediaStream> {
-  console.log('set_media_to_user')
-  media_display = false
+  media_display_returned = true
+
+  // AD HOC
+  // return to user media if user stopped recording
+  const media_tracks = stream.getTracks()
+  const first_media_track = media_tracks[0]
+  if (first_media_track) {
+    const end_listener = async () => {
+      first_media_track.removeEventListener('ended', end_listener)
+      refresh_media_to_user()
+    }
+    first_media_track.addEventListener('ended', end_listener)
+  }
+
+  set_video_stream(stream)
 
   media_container.style.borderRadius = '30px'
   media.style.borderRadius = '15px'
 
-  return new Promise((resolve, reject) => {
-    navigator.mediaDevices
-      .getUserMedia({
-        video: true,
-        audio: { echoCancellation: true, noiseSuppression: true },
-      })
-      .then((stream) => {
-        set_video_stream(stream)
-        resolve(stream)
-      })
-      .catch((err) => {
-        console.log('navigator', 'mediaDevices', 'err', err)
-        reject(err)
-      })
-  })
+  return stream
+}
+
+async function refresh_media_to_display(): Promise<void> {
+  const stream = await set_media_to_display()
+  refresh_recording(stream)
+}
+
+async function set_media_to_user(): Promise<MediaStream> {
+  console.log('set_media_to_user')
+
+  if (media_display_returned) {
+    // stop browser recording
+    _stream.getTracks().forEach((track) => track.stop())
+  }
+
+  media_display = false
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: { echoCancellation: true, noiseSuppression: true },
+    })
+
+    set_video_stream(stream)
+
+    media.style.borderRadius = '3px'
+    media_container.style.borderRadius = '6px'
+
+    return stream
+  } catch (err) {
+    console.log('navigator', 'mediaDevices', 'err', err)
+  }
+}
+
+async function refresh_media_to_user(): Promise<void> {
+  const stream = await set_media_to_user()
+  refresh_recording(stream)
 }
 
 function setup_media_recorder(stream: MediaStream): void {
   if (media_recorder) {
-    plunk_media_recorder_listener()
+    media_recorder.ondataavailable = null
+    stop_media_recorder()
   }
 
   media_recorder = new MediaRecorder(stream, {
@@ -311,14 +356,6 @@ function setup_media_recorder(stream: MediaStream): void {
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
 
-  media_recorder.start(2000)
-
-  if (connected) {
-    setup_media_recorder_listener()
-  }
-}
-
-function setup_media_recorder_listener(): void {
   media_recorder.ondataavailable = function (event) {
     const { data } = event
     if (recording && connected) {
@@ -327,8 +364,29 @@ function setup_media_recorder_listener(): void {
   }
 }
 
-function plunk_media_recorder_listener(): void {
-  media_recorder.ondataavailable = null
+const MEDIA_RECORDER_T = 2000
+
+let media_recorder_started = false
+
+function start_media_recorder(): void {
+  if (media_recorder_started) {
+    return
+  }
+  console.log('start_media_recorder')
+  media_recorder_started = true
+  media_recorder.start(MEDIA_RECORDER_T)
+}
+
+function stop_media_recorder(): void {
+  if (!media_recorder_started) {
+    return
+  }
+  media_recorder_started = false
+  console.log('stop_media_recorder')
+  if (media_recorder.state === 'inactive') {
+    return
+  }
+  media_recorder.stop()
 }
 
 function set_video_stream(stream: MediaStream): void {
@@ -363,10 +421,8 @@ media_container.style.display = 'block'
 
 media_container.onclick = async () => {
   if (media_display) {
-    const stream = await set_media_to_user()
-    refresh_recording(stream)
+    refresh_media_to_user()
   } else {
-    const stream = await set_media_to_display()
-    refresh_recording(stream)
+    refresh_media_to_display()
   }
 }
