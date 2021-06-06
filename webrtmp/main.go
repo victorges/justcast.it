@@ -64,12 +64,12 @@ func saveToDisk(ctx context.Context, i media.Writer, track *webrtc.TrackRemote) 
 	return nil
 }
 
-func configurePeerConnection(conn *webrtc.PeerConnection) {
+func configurePeerConnection(conn *webrtc.PeerConnection) error {
 	// Allow us to receive 1 audio track, and 1 video track
 	if _, err := conn.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
-		panic(err)
+		return err
 	} else if _, err = conn.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo); err != nil {
-		panic(err)
+		return err
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -154,6 +154,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 			cancel()
 		}
 	})
+	return nil
 }
 
 func main() {
@@ -221,7 +222,12 @@ func main() {
 			fmt.Fprintln(rw, err)
 			return
 		}
-		configurePeerConnection(peerConnection)
+		err = configurePeerConnection(peerConnection)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(rw, err)
+			return
+		}
 
 		// Wait for the offer to be pasted
 		var offer webrtc.SessionDescription
