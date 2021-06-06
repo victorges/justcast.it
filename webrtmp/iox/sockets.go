@@ -1,12 +1,14 @@
 package iox
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
 	"sync/atomic"
+	"time"
 )
 
 var socketIdCounter int64 = 0
@@ -16,7 +18,7 @@ func newSocketPath() string {
 	return fmt.Sprintf("/tmp/webrtmp-%d.sock", id)
 }
 
-func NewSocketWriter() (w io.WriteCloser, path string, err error) {
+func NewSocketWriter(ctx context.Context) (w io.WriteCloser, path string, err error) {
 	path = newSocketPath()
 
 	if err := os.RemoveAll(path); err != nil {
@@ -28,23 +30,41 @@ func NewSocketWriter() (w io.WriteCloser, path string, err error) {
 		return nil, "", fmt.Errorf("error opening server on socket: %w", err)
 	}
 
-	pipeIn, pipeOut := io.Pipe()
+	pipeRead, pipeWrite := io.Pipe()
 	go func() {
 		defer l.Close()
-		for {
-			conn, err := l.Accept()
-			if err != nil {
-				log.Fatal("accept error:", err)
+		var err error
+		defer func() { pipeRead.CloseWithError(err) }()
+
+		// We only support 1 reader
+		conn, err := l.Accept()
+		if err != nil {
+			log.Fatal("accept error:", err)
+		}
+		defer conn.Close()
+
+		buf := make([]byte, 32*1024)
+		n, bytes := 0, 0
+		for ctx.Err() == nil {
+			n, err = pipeRead.Read(buf)
+			if err == io.EOF || ctx.Err() != nil {
+				err = nil
+				break
+			} else if err != nil {
+				log.Printf("Error reading pipe: %v\n", err)
+				break
 			}
 
-			// We only support 1 reader at a time
-			bytes, err := io.Copy(conn, pipeIn)
-			mib := float64(bytes) / 1024 / 1024
-			log.Printf("Piped %.1fMiB bytes through socket with err: %v\n", mib, err)
-			if err == nil {
-				return
+			conn.SetDeadline(time.Now().Add(5 * time.Second))
+			n, err = conn.Write(buf[:n])
+			if err != nil {
+				log.Printf("Error writing to unix socket: %v\n", err)
+				break
 			}
+			bytes += n
 		}
+		mib := float64(bytes) / 1024 / 1024
+		log.Printf("Piped %.1fMiB bytes through socket\n", mib)
 	}()
-	return pipeOut, path, nil
+	return pipeWrite, path, nil
 }

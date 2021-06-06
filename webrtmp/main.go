@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pion/interceptor"
@@ -31,8 +32,8 @@ func getOggFile(dest io.WriteCloser) media.Writer {
 	return oggFile
 }
 
-func getH264File() (media.Writer, string) {
-	h264Writer, h264Path, err := iox.NewSocketWriter()
+func getH264File(ctx context.Context) (media.Writer, string) {
+	h264Writer, h264Path, err := iox.NewSocketWriter(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -48,8 +49,11 @@ func saveToDisk(ctx context.Context, i media.Writer, track *webrtc.TrackRemote) 
 	}()
 
 	for ctx.Err() == nil {
+		track.SetReadDeadline(time.Now().Add(5 * time.Second))
 		rtpPacket, _, err := track.ReadRTP()
-		if err != nil {
+		if err == io.EOF || ctx.Err() != nil {
+			break
+		} else if err != nil {
 			return err
 		}
 		if err := i.WriteRTP(rtpPacket); err != nil {
@@ -75,17 +79,26 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 	ffmpegOpts := ffmpeg.Opts{
 		Output: fmt.Sprintf("./out/output-%d.flv", time.Now().Unix()),
 	}
+	tracskWg := sync.WaitGroup{}
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
 		go func() {
 			ticker := time.NewTicker(2 * time.Second)
-			for range ticker.C {
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+				case <-ctx.Done():
+					return
+				}
 				errSend := conn.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}})
 				if errSend != nil {
 					log.Println(errSend)
 				}
 			}
 		}()
+		tracskWg.Add(1)
+		defer tracskWg.Done()
 
 		var socketPath string
 		var lazyDest func() media.Writer
@@ -93,14 +106,14 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 		codec := track.Codec()
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
 			log.Println("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
-			oggDest, oggPath, err := iox.NewSocketWriter()
+			oggDest, oggPath, err := iox.NewSocketWriter(ctx)
 			if err != nil {
 				panic(err)
 			}
 			socketPath, lazyDest = oggPath, func() media.Writer { return getOggFile(oggDest) }
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeH264) {
 			log.Println("Got H.264 track, saving to disk as output.h264")
-			h264File, h264path := getH264File()
+			h264File, h264path := getH264File(ctx)
 			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
 
 			ffmpegOpts.InVideoMimeType = codec.MimeType
@@ -109,8 +122,14 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 		if len(ffmpegOpts.Input) == 2 {
 			go func() {
 				log.Println("Starting ffmpeg writing to", ffmpegOpts.Output)
-				if err := ffmpeg.Run(ctx, ffmpegOpts); err != nil {
-					panic(err)
+				ffmpegCtx, cancel := context.WithCancel(context.Background())
+				go func() {
+					tracskWg.Wait()
+					log.Println("Stopping ffmpeg")
+					cancel()
+				}()
+				if err := ffmpeg.Run(ffmpegCtx, ffmpegOpts); err != nil {
+					log.Println("Error returned by ffmpeg cmd", err)
 				}
 			}()
 		}
@@ -124,12 +143,13 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 	// Set the handler for ICE connection state
 	// This will notify you when the peer has connected/disconnected
 	conn.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		log.Printf("Connection State has changed %s \n", connectionState.String())
+		log.Println("Connection State has changed", connectionState)
 
 		if connectionState == webrtc.ICEConnectionStateConnected {
 			log.Println("Ctrl+C the remote client to stop the demo")
 		} else if connectionState == webrtc.ICEConnectionStateFailed ||
 			connectionState == webrtc.ICEConnectionStateDisconnected {
+			conn.Close()
 			cancel()
 		}
 	})
