@@ -72,7 +72,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 	// Set a handler for when a new remote track starts, this handler saves buffers to disk as
 	// an ivf file, since we could have multiple video tracks we provide a counter.
 	// In your application this is where you would handle/process video
-	ffmpegOpts := ffmpeg.FFmpegOpts{
+	ffmpegOpts := ffmpeg.Opts{
 		Output: fmt.Sprintf("output-%d.flv", time.Now().Unix()),
 	}
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
@@ -108,6 +108,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 		ffmpegOpts.Input = append(ffmpegOpts.Input, "unix:"+socketPath)
 		if len(ffmpegOpts.Input) == 2 {
 			go func() {
+				fmt.Println("Starting ffmpeg writing to", ffmpegOpts.Output)
 				if err := ffmpeg.Run(ctx, ffmpegOpts); err != nil {
 					panic(err)
 				}
@@ -222,7 +223,7 @@ func main() {
 		}
 
 		// Create channel that is blocked until ICE Gathering is complete
-		// gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
+		gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
 
 		// Sets the LocalDescription, and starts our UDP listeners
 		err = peerConnection.SetLocalDescription(answer)
@@ -235,12 +236,14 @@ func main() {
 		// Block until ICE Gathering is complete, disabling trickle ICE
 		// we do this because we only can exchange one signaling message
 		// in a production application you should exchange ICE Candidates via OnICECandidate
-		// <-gatherComplete
+		<-gatherComplete
 
 		rw.WriteHeader(http.StatusOK)
 		// Output the answer in base64 so we can paste it in browser
 		fmt.Fprintln(rw, iox.Encode(*peerConnection.LocalDescription()))
 	})
+
+	http.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
 
 	fmt.Println("Listening on port :7867")
 	http.ListenAndServe(":7867", nil)

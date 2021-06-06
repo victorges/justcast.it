@@ -10,7 +10,7 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
-type FFmpegOpts struct {
+type Opts struct {
 	Input           []string
 	InVideoMimeType string
 	Output          string
@@ -23,7 +23,7 @@ var videoTranscodeArgs = append([]string{}, append(baseArgs,
 	"-v:c", "libx264",
 	"-x264-params", "keyint=60:scenecut=0")...)
 
-func Run(ctx context.Context, opts FFmpegOpts) error {
+func Run(ctx context.Context, opts Opts) error {
 	var args []string
 	for _, in := range opts.Input {
 		args = append(args, "-i", in)
