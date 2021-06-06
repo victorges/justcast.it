@@ -214,43 +214,44 @@ func main() {
 			fmt.Fprintln(rw, "Unsupported mime type", mimeType)
 			return
 		}
+		handleErr := func(err error, status int) bool {
+			if err == nil {
+				return false
+			}
+			if status == 0 {
+				status = http.StatusInternalServerError
+			}
+			rw.WriteHeader(status)
+			fmt.Fprintln(rw, err)
+			return true
+		}
 
 		// Create a new RTCPeerConnection
 		peerConnection, err := api.NewPeerConnection(config)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if handleErr(err, 0) {
 			return
 		}
 		err = configurePeerConnection(peerConnection)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if handleErr(err, 0) {
 			return
 		}
 
 		// Wait for the offer to be pasted
 		var offer webrtc.SessionDescription
 		decoder := json.NewDecoder(req.Body)
-		if err := decoder.Decode(&offer); err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if err := decoder.Decode(&offer); handleErr(err, http.StatusBadRequest) {
 			return
 		}
 
 		// Set the remote SessionDescription
 		err = peerConnection.SetRemoteDescription(offer)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if handleErr(err, 0) {
 			return
 		}
 
 		// Create answer
 		answer, err := peerConnection.CreateAnswer(nil)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if handleErr(err, 0) {
 			return
 		}
 
@@ -259,9 +260,7 @@ func main() {
 
 		// Sets the LocalDescription, and starts our UDP listeners
 		err = peerConnection.SetLocalDescription(answer)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if handleErr(err, 0) {
 			return
 		}
 
@@ -273,9 +272,7 @@ func main() {
 		rw.Header().Add("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		bytes, err := json.Marshal(*peerConnection.LocalDescription())
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(rw, err)
+		if handleErr(err, 0) {
 			return
 		}
 		rw.Write(bytes)
