@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -39,22 +40,23 @@ func getH264File() (media.Writer, string) {
 	return h264File, h264Path
 }
 
-func saveToDisk(i media.Writer, track *webrtc.TrackRemote) {
+func saveToDisk(ctx context.Context, i media.Writer, track *webrtc.TrackRemote) (retErr error) {
 	defer func() {
 		if err := i.Close(); err != nil {
-			panic(err)
+			retErr = err
 		}
 	}()
 
-	for {
+	for ctx.Err() == nil {
 		rtpPacket, _, err := track.ReadRTP()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if err := i.WriteRTP(rtpPacket); err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func configurePeerConnection(conn *webrtc.PeerConnection) {
@@ -73,7 +75,6 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 	ffmpegOpts := ffmpeg.FFmpegOpts{
 		Output: fmt.Sprintf("output-%d.flv", time.Now().Unix()),
 	}
-	closers := []io.Closer{}
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
 		go func() {
@@ -113,9 +114,10 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 			}()
 		}
 
-		dest := lazyDest()
-		closers = append(closers, dest)
-		saveToDisk(dest, track)
+		err := saveToDisk(ctx, lazyDest(), track)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error saving %s to disk: %v\n", codec.MimeType, err)
+		}
 	})
 
 	// Set the handler for ICE connection state
@@ -127,12 +129,6 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 			fmt.Println("Ctrl+C the remote client to stop the demo")
 		} else if connectionState == webrtc.ICEConnectionStateFailed ||
 			connectionState == webrtc.ICEConnectionStateDisconnected {
-
-			for _, closer := range closers {
-				if err := closer.Close(); err != nil {
-					panic(err)
-				}
-			}
 			cancel()
 		}
 	})
