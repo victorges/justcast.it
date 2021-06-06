@@ -120,14 +120,14 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 		}
 		ffmpegOpts.Input = append(ffmpegOpts.Input, "unix:"+socketPath)
 		if len(ffmpegOpts.Input) == 2 {
+			ffmpegCtx, cancel := context.WithCancel(context.Background())
+			go func() {
+				tracskWg.Wait()
+				log.Println("Stopping ffmpeg")
+				cancel()
+			}()
 			go func() {
 				log.Println("Starting ffmpeg writing to", ffmpegOpts.Output)
-				ffmpegCtx, cancel := context.WithCancel(context.Background())
-				go func() {
-					tracskWg.Wait()
-					log.Println("Stopping ffmpeg")
-					cancel()
-				}()
 				if err := ffmpeg.Run(ffmpegCtx, ffmpegOpts); err != nil {
 					log.Println("Error returned by ffmpeg cmd", err)
 				}
@@ -203,6 +203,9 @@ func main() {
 	}
 
 	http.HandleFunc("/webrtc/offer", func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 		if req.Method != http.MethodPost {
 			rw.WriteHeader(http.StatusMethodNotAllowed)
 			return
