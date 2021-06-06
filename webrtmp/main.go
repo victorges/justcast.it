@@ -8,15 +8,45 @@ import (
 	"strings"
 	"time"
 
-	"github.com/victorges/justcast.it/webrtmp/signal"
-
 	"github.com/pion/interceptor"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/h264writer"
 	"github.com/pion/webrtc/v3/pkg/media/oggwriter"
+
+	"github.com/victorges/justcast.it/webrtmp/iox"
 )
+
+var h264File media.Writer
+var oggFileFunc func() media.Writer
+
+func init() {
+	oggWriter, oggPath, err := iox.NewSocketWriter()
+	if err != nil {
+		panic(err)
+	}
+	var oggFile media.Writer
+	oggFileFunc = func() media.Writer {
+		if oggFile != nil {
+			return oggFile
+		}
+
+		oggFile, err = oggwriter.NewWith(oggWriter, 48000, 2)
+		if err != nil {
+			panic(err)
+		}
+		return oggFile
+	}
+	h264Writer, h264Path, err := iox.NewSocketWriter()
+	if err != nil {
+		panic(err)
+	}
+	h264File = h264writer.NewWith(h264Writer)
+
+	fmt.Println("Writing opus to:", oggPath)
+	fmt.Println("Writing h264 to:", h264Path)
+}
 
 func saveToDisk(i media.Writer, track *webrtc.TrackRemote) {
 	defer func() {
@@ -93,15 +123,6 @@ func main() {
 		panic(err)
 	}
 
-	oggFile, err := oggwriter.New("output.ogg", 48000, 2)
-	if err != nil {
-		panic(err)
-	}
-	h264File, err := h264writer.New("output.h264")
-	if err != nil {
-		panic(err)
-	}
-
 	// Set a handler for when a new remote track starts, this handler saves buffers to disk as
 	// an ivf file, since we could have multiple video tracks we provide a counter.
 	// In your application this is where you would handle/process video
@@ -120,7 +141,7 @@ func main() {
 		codec := track.Codec()
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
 			fmt.Println("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
-			saveToDisk(oggFile, track)
+			saveToDisk(oggFileFunc(), track)
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeH264) {
 			fmt.Println("Got H.264 track, saving to disk as output.h264")
 			saveToDisk(h264File, track)
@@ -136,7 +157,7 @@ func main() {
 			fmt.Println("Ctrl+C the remote client to stop the demo")
 		} else if connectionState == webrtc.ICEConnectionStateFailed ||
 			connectionState == webrtc.ICEConnectionStateDisconnected {
-			closeErr := oggFile.Close()
+			closeErr := oggFileFunc().Close()
 			if closeErr != nil {
 				panic(closeErr)
 			}
@@ -153,7 +174,7 @@ func main() {
 
 	// Wait for the offer to be pasted
 	offer := webrtc.SessionDescription{}
-	signal.Decode(signal.MustReadStdin(), &offer)
+	iox.Decode(iox.MustReadStdin(), &offer)
 
 	// Set the remote SessionDescription
 	err = peerConnection.SetRemoteDescription(offer)
@@ -182,7 +203,7 @@ func main() {
 	<-gatherComplete
 
 	// Output the answer in base64 so we can paste it in browser
-	fmt.Println(signal.Encode(*peerConnection.LocalDescription()))
+	fmt.Println(iox.Encode(*peerConnection.LocalDescription()))
 
 	// Block forever
 	select {}
