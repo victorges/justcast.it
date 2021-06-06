@@ -22,9 +22,25 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
 
 pc.oniceconnectionstatechange = e => log(pc.iceConnectionState)
 pc.onicecandidate = event => {
-  if (event.candidate === null) {
-    document.getElementById('localSessionDescription').value = btoa(JSON.stringify(pc.localDescription))
+  if (event.candidate !== null) {
+    return
   }
+  const localDesc = btoa(JSON.stringify(pc.localDescription))
+  document.getElementById('localSessionDescription').value = localDesc
+
+  console.log('fetching')
+  fetch('/webrtc/offer', {
+    method: 'POST',
+    body: localDesc
+  }).then(res => {
+    console.log('fetched')
+    if (res.status !== 200) {
+      throw new Error('Error response from server: '+res.status)
+    }
+    return res.text()
+  }).then(remoteDesk => {
+    document.getElementById('remoteSessionDescription').value = remoteDesk
+  }).catch(log)
 }
 
 window.startSession = () => {
