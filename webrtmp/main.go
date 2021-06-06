@@ -10,6 +10,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -287,6 +288,10 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
 
-	log.Println("Listening on port :7867")
-	http.ListenAndServe(":7867", nil)
+	port := "7867"
+	if env, ok := os.LookupEnv("PORT"); ok {
+		port = env
+	}
+	log.Println("Listening on port :" + port)
+	http.ListenAndServe(":"+port, nil)
 }
