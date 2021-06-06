@@ -64,7 +64,7 @@ func saveToDisk(ctx context.Context, i media.Writer, track *webrtc.TrackRemote) 
 	return nil
 }
 
-func configurePeerConnection(conn *webrtc.PeerConnection) error {
+func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	// Allow us to receive 1 audio track, and 1 video track
 	if _, err := conn.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
 		return err
@@ -77,9 +77,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) error {
 	// Set a handler for when a new remote track starts, this handler saves buffers to disk as
 	// an ivf file, since we could have multiple video tracks we provide a counter.
 	// In your application this is where you would handle/process video
-	ffmpegOpts := ffmpeg.Opts{
-		Output: fmt.Sprintf("./out/output-%d.flv", time.Now().Unix()),
-	}
+	ffmpegOpts := ffmpeg.Opts{Output: output}
 	tracskWg := sync.WaitGroup{}
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
@@ -226,16 +224,6 @@ func main() {
 			return true
 		}
 
-		// Create a new RTCPeerConnection
-		peerConnection, err := api.NewPeerConnection(config)
-		if handleErr(err, 0) {
-			return
-		}
-		err = configurePeerConnection(peerConnection)
-		if handleErr(err, 0) {
-			return
-		}
-
 		// Wait for the offer to be pasted
 		var offer webrtc.SessionDescription
 		decoder := json.NewDecoder(req.Body)
@@ -243,6 +231,25 @@ func main() {
 			return
 		}
 
+		var output string
+		query := req.URL.Query()
+		if rtmp := query.Get("rtmp"); rtmp != "" {
+			output = rtmp
+		} else if streamKey := query.Get("streamKey"); streamKey != "" {
+			output = "rtmp://rtmp.livepeer.com/live/" + streamKey
+		} else {
+			output = fmt.Sprintf("./out/output-%d.flv", time.Now().Unix())
+		}
+
+		// Create a new RTCPeerConnection
+		peerConnection, err := api.NewPeerConnection(config)
+		if handleErr(err, 0) {
+			return
+		}
+		err = configurePeerConnection(peerConnection, output)
+		if handleErr(err, 0) {
+			return
+		}
 		// Set the remote SessionDescription
 		err = peerConnection.SetRemoteDescription(offer)
 		if handleErr(err, 0) {
