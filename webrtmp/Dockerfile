@@ -8,9 +8,11 @@ RUN go mod download
 COPY . ./
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o webrtmp
 
-FROM alpine
+FROM debian:stretch-slim
 
-RUN apk add --no-cache ffmpeg
+RUN apt update && \
+  apt install -y ffmpeg && \
+  apt clean && apt autoclean
 RUN ffmpeg -version
 
 WORKDIR /usr/app
