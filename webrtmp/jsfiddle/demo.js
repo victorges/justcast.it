@@ -28,7 +28,8 @@ pc.onicecandidate = event => {
   const localDesc = JSON.stringify(pc.localDescription)
   document.getElementById('localSessionDescription').value = localDesc
 
-  fetch('/webrtc/offer', {
+  const query = window.location.search
+  fetch(`/webrtc/offer${query}`, {
     method: 'POST',
     body: localDesc,
     headers: {
