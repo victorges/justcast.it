@@ -20,7 +20,7 @@ func NewSocketWriter() (w io.WriteCloser, path string, err error) {
 	path = newSocketPath()
 
 	if err := os.RemoveAll(path); err != nil {
-		return nil, "", fmt.Errorf("Error deleting existing socket: %w", err)
+		return nil, "", fmt.Errorf("error deleting existing socket: %w", err)
 	}
 
 	l, err := net.Listen("unix", path)
@@ -38,8 +38,9 @@ func NewSocketWriter() (w io.WriteCloser, path string, err error) {
 			}
 
 			// We only support 1 reader at a time
-			n, err := io.Copy(conn, pipeIn)
-			log.Println("Piped", n, "bytes through socket with err", err)
+			bytes, err := io.Copy(conn, pipeIn)
+			mib := float64(bytes) / 1024 / 1024
+			log.Printf("Piped %.1fMiB bytes through socket with err: %v\n", mib, err)
 			if err == nil {
 				return
 			}

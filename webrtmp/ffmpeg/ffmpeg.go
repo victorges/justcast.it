@@ -44,7 +44,7 @@ func Run(ctx context.Context, opts Opts) error {
 	if err != nil {
 		return err
 	}
-	go io.Copy(os.Stderr, stderr)
-	go io.Copy(os.Stderr, stdout)
+	go io.Copy(os.Stdout, stderr)
+	go io.Copy(os.Stdout, stdout)
 	return cmd.Run()
 }

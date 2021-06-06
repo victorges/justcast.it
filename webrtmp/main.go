@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -73,7 +73,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 	// an ivf file, since we could have multiple video tracks we provide a counter.
 	// In your application this is where you would handle/process video
 	ffmpegOpts := ffmpeg.Opts{
-		Output: fmt.Sprintf("output-%d.flv", time.Now().Unix()),
+		Output: fmt.Sprintf("./out/output-%d.flv", time.Now().Unix()),
 	}
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
@@ -82,7 +82,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 			for range ticker.C {
 				errSend := conn.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}})
 				if errSend != nil {
-					fmt.Println(errSend)
+					log.Println(errSend)
 				}
 			}
 		}()
@@ -92,14 +92,14 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 
 		codec := track.Codec()
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
-			fmt.Println("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
+			log.Println("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
 			oggDest, oggPath, err := iox.NewSocketWriter()
 			if err != nil {
 				panic(err)
 			}
 			socketPath, lazyDest = oggPath, func() media.Writer { return getOggFile(oggDest) }
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeH264) {
-			fmt.Println("Got H.264 track, saving to disk as output.h264")
+			log.Println("Got H.264 track, saving to disk as output.h264")
 			h264File, h264path := getH264File()
 			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
 
@@ -108,7 +108,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 		ffmpegOpts.Input = append(ffmpegOpts.Input, "unix:"+socketPath)
 		if len(ffmpegOpts.Input) == 2 {
 			go func() {
-				fmt.Println("Starting ffmpeg writing to", ffmpegOpts.Output)
+				log.Println("Starting ffmpeg writing to", ffmpegOpts.Output)
 				if err := ffmpeg.Run(ctx, ffmpegOpts); err != nil {
 					panic(err)
 				}
@@ -117,17 +117,17 @@ func configurePeerConnection(conn *webrtc.PeerConnection) {
 
 		err := saveToDisk(ctx, lazyDest(), track)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error saving %s to disk: %v\n", codec.MimeType, err)
+			log.Printf("Error saving %s to disk: %v\n", codec.MimeType, err)
 		}
 	})
 
 	// Set the handler for ICE connection state
 	// This will notify you when the peer has connected/disconnected
 	conn.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		fmt.Printf("Connection State has changed %s \n", connectionState.String())
+		log.Printf("Connection State has changed %s \n", connectionState.String())
 
 		if connectionState == webrtc.ICEConnectionStateConnected {
-			fmt.Println("Ctrl+C the remote client to stop the demo")
+			log.Println("Ctrl+C the remote client to stop the demo")
 		} else if connectionState == webrtc.ICEConnectionStateFailed ||
 			connectionState == webrtc.ICEConnectionStateDisconnected {
 			cancel()
@@ -245,6 +245,6 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
 
-	fmt.Println("Listening on port :7867")
+	log.Println("Listening on port :7867")
 	http.ListenAndServe(":7867", nil)
 }
