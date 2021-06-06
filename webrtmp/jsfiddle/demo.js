@@ -25,17 +25,18 @@ pc.onicecandidate = event => {
   if (event.candidate !== null) {
     return
   }
-  const localDesc = btoa(JSON.stringify(pc.localDescription))
+  const localDesc = JSON.stringify(pc.localDescription)
   document.getElementById('localSessionDescription').value = localDesc
 
-  console.log('fetching')
   fetch('/webrtc/offer', {
     method: 'POST',
-    body: localDesc
-  }).then(res => {
-    console.log('fetched')
+    body: localDesc,
+    headers: {
+      ['content-type']: 'application/json'
+    }
+  }).then(async res => {
     if (res.status !== 200) {
-      throw new Error('Error response from server: '+res.status)
+      throw new Error(`Error response from server: ${res.status}`)
     }
     return res.text()
   }).then(remoteDesk => {
@@ -50,7 +51,7 @@ window.startSession = () => {
   }
 
   try {
-    pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(sd))))
+    pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sd)))
   } catch (e) {
     alert(e)
   }

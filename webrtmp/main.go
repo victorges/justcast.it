@@ -4,10 +4,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"strings"
 	"sync"
@@ -206,6 +207,12 @@ func main() {
 			rw.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
+		mimeType, _, _ := mime.ParseMediaType(req.Header.Get("Content-Type"))
+		if mimeType != "application/json" {
+			rw.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(rw, "Unsupported mime type", mimeType)
+			return
+		}
 
 		// Create a new RTCPeerConnection
 		peerConnection, err := api.NewPeerConnection(config)
@@ -217,14 +224,13 @@ func main() {
 		configurePeerConnection(peerConnection)
 
 		// Wait for the offer to be pasted
-		offer := webrtc.SessionDescription{}
-		bytes, err := ioutil.ReadAll(req.Body)
-		if err != nil {
+		var offer webrtc.SessionDescription
+		decoder := json.NewDecoder(req.Body)
+		if err := decoder.Decode(&offer); err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintln(rw, err)
 			return
 		}
-		iox.Decode(string(bytes), &offer)
 
 		// Set the remote SessionDescription
 		err = peerConnection.SetRemoteDescription(offer)
@@ -258,9 +264,15 @@ func main() {
 		// in a production application you should exchange ICE Candidates via OnICECandidate
 		<-gatherComplete
 
+		rw.Header().Add("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		// Output the answer in base64 so we can paste it in browser
-		fmt.Fprintln(rw, iox.Encode(*peerConnection.LocalDescription()))
+		bytes, err := json.Marshal(*peerConnection.LocalDescription())
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(rw, err)
+			return
+		}
+		rw.Write(bytes)
 	})
 
 	http.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
