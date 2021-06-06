@@ -3,7 +3,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -15,37 +17,25 @@ import (
 	"github.com/pion/webrtc/v3/pkg/media/h264writer"
 	"github.com/pion/webrtc/v3/pkg/media/oggwriter"
 
+	"github.com/victorges/justcast.it/webrtmp/ffmpeg"
 	"github.com/victorges/justcast.it/webrtmp/iox"
 )
 
-var h264File media.Writer
-var oggFileFunc func() media.Writer
-
-func init() {
-	oggWriter, oggPath, err := iox.NewSocketWriter()
+func getOggFile(dest io.WriteCloser) media.Writer {
+	oggFile, err := oggwriter.NewWith(dest, 48000, 2)
 	if err != nil {
 		panic(err)
 	}
-	var oggFile media.Writer
-	oggFileFunc = func() media.Writer {
-		if oggFile != nil {
-			return oggFile
-		}
+	return oggFile
+}
 
-		oggFile, err = oggwriter.NewWith(oggWriter, 48000, 2)
-		if err != nil {
-			panic(err)
-		}
-		return oggFile
-	}
+func getH264File() (media.Writer, string) {
 	h264Writer, h264Path, err := iox.NewSocketWriter()
 	if err != nil {
 		panic(err)
 	}
-	h264File = h264writer.NewWith(h264Writer)
-
-	fmt.Println("Writing opus to:", oggPath)
-	fmt.Println("Writing h264 to:", h264Path)
+	h264File := h264writer.NewWith(h264Writer)
+	return h264File, h264Path
 }
 
 func saveToDisk(i media.Writer, track *webrtc.TrackRemote) {
@@ -123,13 +113,20 @@ func main() {
 		panic(err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Set a handler for when a new remote track starts, this handler saves buffers to disk as
 	// an ivf file, since we could have multiple video tracks we provide a counter.
 	// In your application this is where you would handle/process video
+	ffmpegOpts := ffmpeg.FFmpegOpts{
+		Output: fmt.Sprintf("output-%d.flv", time.Now().Unix()),
+	}
+	closers := []io.Closer{}
 	peerConnection.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
 		go func() {
-			ticker := time.NewTicker(time.Second * 3)
+			ticker := time.NewTicker(2 * time.Second)
 			for range ticker.C {
 				errSend := peerConnection.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}})
 				if errSend != nil {
@@ -138,14 +135,36 @@ func main() {
 			}
 		}()
 
+		var socketPath string
+		var lazyDest func() media.Writer
+
 		codec := track.Codec()
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
 			fmt.Println("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
-			saveToDisk(oggFileFunc(), track)
+			oggDest, oggPath, err := iox.NewSocketWriter()
+			if err != nil {
+				panic(err)
+			}
+			socketPath, lazyDest = oggPath, func() media.Writer { return getOggFile(oggDest) }
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeH264) {
 			fmt.Println("Got H.264 track, saving to disk as output.h264")
-			saveToDisk(h264File, track)
+			h264File, h264path := getH264File()
+			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
+
+			ffmpegOpts.InVideoMimeType = codec.MimeType
 		}
+		ffmpegOpts.Input = append(ffmpegOpts.Input, "unix:"+socketPath)
+		if len(ffmpegOpts.Input) == 2 {
+			go func() {
+				if err := ffmpeg.Run(ctx, ffmpegOpts); err != nil {
+					panic(err)
+				}
+			}()
+		}
+
+		dest := lazyDest()
+		closers = append(closers, dest)
+		saveToDisk(dest, track)
 	})
 
 	// Set the handler for ICE connection state
@@ -157,15 +176,13 @@ func main() {
 			fmt.Println("Ctrl+C the remote client to stop the demo")
 		} else if connectionState == webrtc.ICEConnectionStateFailed ||
 			connectionState == webrtc.ICEConnectionStateDisconnected {
-			closeErr := oggFileFunc().Close()
-			if closeErr != nil {
-				panic(closeErr)
-			}
 
-			closeErr = h264File.Close()
-			if closeErr != nil {
-				panic(closeErr)
+			for _, closer := range closers {
+				if err := closer.Close(); err != nil {
+					panic(err)
+				}
 			}
+			cancel()
 
 			fmt.Println("Done writing media files")
 			os.Exit(0)
