@@ -207,7 +207,11 @@ func main() {
 		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if req.Method != http.MethodPost {
-			rw.WriteHeader(http.StatusMethodNotAllowed)
+			if req.Method == http.MethodOptions {
+				rw.WriteHeader(http.StatusOK)
+			} else {
+				rw.WriteHeader(http.StatusMethodNotAllowed)
+			}
 			return
 		}
 		mimeType, _, _ := mime.ParseMediaType(req.Header.Get("Content-Type"))
