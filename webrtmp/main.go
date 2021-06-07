@@ -202,6 +202,10 @@ func main() {
 		},
 	}
 
+	http.HandleFunc("/healthcheck", func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+	})
+
 	http.HandleFunc("/webrtc/offer", func(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("Access-Control-Allow-Origin", "*")
 		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
