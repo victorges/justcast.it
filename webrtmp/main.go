@@ -65,6 +65,44 @@ func saveToDisk(ctx context.Context, i media.Writer, track *webrtc.TrackRemote) 
 	return nil
 }
 
+func waitGroupContext(wg *sync.WaitGroup) context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		wg.Wait()
+		cancel()
+	}()
+	return ctx
+}
+
+func mergeOpts(baseOpts ffmpeg.Opts, toMerge <-chan ffmpeg.Opts, numInputs int) ffmpeg.Opts {
+	opts := baseOpts
+	for len(opts.Input) < numInputs {
+		merge := <-toMerge
+		opts.Input = append(opts.Input, merge.Input...)
+		if merge.Output != "" {
+			opts.Output = merge.Output
+		}
+		if merge.InVideoMimeType != "" {
+			opts.InVideoMimeType = merge.InVideoMimeType
+		}
+	}
+	return opts
+}
+
+func prepareFfmpeg(wg *sync.WaitGroup, baseOpts ffmpeg.Opts, numInputs int) (inputs chan<- ffmpeg.Opts) {
+	inputChan := make(chan ffmpeg.Opts)
+	go func() {
+		opts := mergeOpts(baseOpts, inputChan, numInputs)
+		close(inputChan)
+
+		log.Println("Starting ffmpeg writing to", opts.Output)
+		if err := ffmpeg.Run(waitGroupContext(wg), opts); err != nil {
+			log.Println("Error returned by ffmpeg cmd", err)
+		}
+	}()
+	return inputChan
+}
+
 func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	// Allow us to receive 1 audio track, and 1 video track
 	if _, err := conn.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
@@ -78,8 +116,8 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	// Set a handler for when a new remote track starts, this handler saves buffers to disk as
 	// an ivf file, since we could have multiple video tracks we provide a counter.
 	// In your application this is where you would handle/process video
-	ffmpegOpts := ffmpeg.Opts{Output: output}
 	tracskWg := sync.WaitGroup{}
+	ffmpegOpts := prepareFfmpeg(&tracskWg, ffmpeg.Opts{Output: output}, 2)
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
 		go func() {
@@ -116,23 +154,9 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 			h264File, h264path := getH264File(ctx)
 			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
 
-			ffmpegOpts.InVideoMimeType = codec.MimeType
+			ffmpegOpts <- ffmpeg.Opts{InVideoMimeType: codec.MimeType}
 		}
-		ffmpegOpts.Input = append(ffmpegOpts.Input, "unix:"+socketPath)
-		if len(ffmpegOpts.Input) == 2 {
-			ffmpegCtx, cancel := context.WithCancel(context.Background())
-			go func() {
-				tracskWg.Wait()
-				log.Println("Stopping ffmpeg")
-				cancel()
-			}()
-			go func() {
-				log.Println("Starting ffmpeg writing to", ffmpegOpts.Output)
-				if err := ffmpeg.Run(ffmpegCtx, ffmpegOpts); err != nil {
-					log.Println("Error returned by ffmpeg cmd", err)
-				}
-			}()
-		}
+		ffmpegOpts <- ffmpeg.Opts{Input: []string{"unix:" + socketPath}}
 
 		err := saveToDisk(ctx, lazyDest(), track)
 		if err != nil {
