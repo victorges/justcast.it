@@ -29,7 +29,7 @@ pc.onicecandidate = event => {
   document.getElementById('localSessionDescription').value = localDesc
 
   const query = window.location.search
-  fetch(`https://webrtmp.justcast.it/webrtc/offer${query}`, {
+  fetch(`/webrtc/offer${query}`, {
     method: 'POST',
     body: localDesc,
     headers: {
