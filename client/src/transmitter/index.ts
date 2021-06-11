@@ -1,6 +1,7 @@
 import isIp from 'is-ip'
 
 import { copyToClipboard } from '../clipboard'
+import connetWebRTC from './webrtc'
 
 const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
@@ -188,34 +189,36 @@ function start_recording(stream: MediaStream) {
 
   recording = true
 
-  setup_media_recorder(stream)
+  connetWebRTC(stream, _streamKey).then((closeFunc) => {})
 
-  const connectTime = Date.now()
-  connect(
-    (openEvent) => {
-      if (recording) {
-        start_media_recorder()
-      }
-    },
-    (closeEvent) => {
-      if (!recording) {
-        return
-      }
+  // setup_media_recorder(stream)
 
-      const { code } = closeEvent
+  // const connectTime = Date.now()
+  // connect(
+  //   (openEvent) => {
+  //     if (recording) {
+  //       start_media_recorder()
+  //     }
+  //   },
+  //   (closeEvent) => {
+  //     if (!recording) {
+  //       return
+  //     }
 
-      if (code !== 1000) {
-        stop_recording()
-      }
+  //     const { code } = closeEvent
 
-      const connectionAge = Date.now() - connectTime
-      const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
-      if (shouldRetry) {
-        console.log('restarting streaming due to ws 1006 error')
-        start_recording(stream)
-      }
-    }
-  )
+  //     if (code !== 1000) {
+  //       stop_recording()
+  //     }
+
+  //     const connectionAge = Date.now() - connectTime
+  //     const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
+  //     if (shouldRetry) {
+  //       console.log('restarting streaming due to ws 1006 error')
+  //       start_recording(stream)
+  //     }
+  //   }
+  // )
 
   record.style.background = '#dd0000'
   record.style.borderColor = '#dd0000'
