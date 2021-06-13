@@ -23,7 +23,35 @@ let recording = false
 
 let _playbackId: string = null
 
-let _mimeType: string | undefined
+function getMimeType() {
+  if (!window.MediaRecorder) {
+    return
+  }
+
+  const types = [
+    'video/webm;codecs=h264',
+    'video/webm',
+    'video/webm;codecs=opus',
+    'video/webm;codecs=vp8',
+    'video/webm;codecs=daala',
+    'video/mpeg',
+    'video/mp4',
+  ]
+
+  let mimeType = ''
+  for (const type of types) {
+    const supported = MediaRecorder.isTypeSupported(type)
+    if (supported) {
+      mimeType = type
+      break
+    }
+  }
+
+  console.log('_mimeType', mimeType)
+  return mimeType
+}
+
+export const mimeType = getMimeType()
 
 function send(data) {
   socket.send(data)
@@ -48,7 +76,7 @@ function connect(
   const protocol = !localhost && secure ? 'wss' : 'ws'
   const portStr = localhost ? `:${port}` : ''
   const query = querystring({
-    mimeType: _mimeType,
+    mimeType: mimeType,
     ignoreCookies: !_playbackId,
   })
   const url = `${protocol}://${hostname}${portStr}/ingest/ws/${streamKey}${query}`
@@ -118,8 +146,8 @@ function setup_media_recorder(stream: MediaStream): void {
   }
 
   media_recorder = new MediaRecorder(stream, {
-    mimeType: _mimeType,
-    audioBitsPerSecond: 128 * 1024,
+    mimeType: mimeType,
+    audioBitsPerSecond: 128 * 1000,
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
 
@@ -178,9 +206,7 @@ function castToWebSocket(stream: MediaStream, streamKey: string): CastSession {
       if (recording) {
         start_media_recorder()
       }
-      if (currCast.onConnected) {
-        currCast.onConnected()
-      }
+      currCast.onConnected?.call(currCast)
     },
     (closeEvent) => {
       if (!recording) {
@@ -198,8 +224,8 @@ function castToWebSocket(stream: MediaStream, streamKey: string): CastSession {
       if (shouldRetry) {
         console.log('restarting streaming due to ws 1006 error')
         castToWebSocket(stream, streamKey)
-      } else if (currCast.onClosed) {
-        currCast.onClosed()
+      } else {
+        currCast.onClosed?.call(currCast)
       }
     }
   )
