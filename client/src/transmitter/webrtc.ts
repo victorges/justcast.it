@@ -4,8 +4,9 @@ async function iceHandshake(
   streamKey: string,
   localDesc: RTCSessionDescription
 ) {
+  const qsKey = streamKey.indexOf('://') > 0 ? 'rtmp' : 'streamKey'
   const answer = await fetch(
-    `https://webrtmp.justcast.it/webrtc/offer?streamKey=${streamKey}`,
+    `https://webrtmp.justcast.it/webrtc/offer?${qsKey}=${streamKey}`,
     {
       method: 'POST',
       body: JSON.stringify(localDesc),
