@@ -78,14 +78,25 @@ let record_frash_dim = false
 
 const minRetryThreshold = 60 * 1000 // 1 min
 
+function requested_transport() {
+  const match = location.search.match(/transport=([^&]+)/)
+  if (!match) {
+    return null
+  }
+  const allowedTransports = ['wrtc', 'ws']
+  return allowedTransports.indexOf(match[1]) > 0 ? match[1] : null
+}
+
 function start_recording(stream: MediaStream) {
   if (curr_cast || !window.MediaRecorder || !_streamKey) {
     return
   }
   console.log('start_recording')
 
+  const transport =
+    requested_transport() ?? (mimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
   const connectTime = Date.now()
-  if (mimeType.indexOf('h264') > 0) {
+  if (transport === 'ws') {
     curr_cast = castToWebSocket(stream, _streamKey, !_playbackId)
   } else {
     curr_cast = castToWebRTC(stream, _streamKey)
