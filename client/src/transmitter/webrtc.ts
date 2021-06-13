@@ -20,12 +20,10 @@ async function iceHandshake(
   return (await answer.json()) as RTCSessionDescriptionInit
 }
 
-async function connetWebRTC(
+async function castToWebRTC(
   stream: MediaStream,
-  streamKey: string,
-  onConnected?: () => void,
-  onClosed?: () => void
-) {
+  streamKey: string
+): Promise<CastSession> {
   const pc = new RTCPeerConnection({
     iceServers: [
       {
@@ -33,6 +31,7 @@ async function connetWebRTC(
       },
     ],
   })
+  const cast: CastSession = { stop: pc.close }
 
   stream.getTracks().forEach((track) => pc.addTrack(track, stream))
 
@@ -53,16 +52,16 @@ async function connetWebRTC(
     log('connection state', state)
     switch (state) {
       case 'connected':
-        if (onConnected) onConnected()
+        if (cast.onConnected) cast.onConnected()
       case 'closed':
-        if (onClosed) onClosed()
+        if (cast.onClosed) cast.onClosed()
     }
   }
 
   const offer = await pc.createOffer()
   await pc.setLocalDescription(offer)
 
-  return pc.close
+  return cast
 }
 
-export default connetWebRTC
+export default castToWebRTC

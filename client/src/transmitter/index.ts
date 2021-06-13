@@ -1,7 +1,7 @@
 import isIp from 'is-ip'
 
 import { copyToClipboard } from '../clipboard'
-import connetWebRTC from './webrtc'
+import castToWebRTC from './webrtc'
 
 const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
@@ -189,7 +189,13 @@ function start_recording(stream: MediaStream) {
 
   recording = true
 
-  connetWebRTC(stream, _streamKey).then((closeFunc) => {})
+  castToWebRTC(stream, _streamKey).then((cast) => {
+    cast.onClosed = () => {
+      if (recording) {
+        stop_recording()
+      }
+    }
+  })
 
   // setup_media_recorder(stream)
 
