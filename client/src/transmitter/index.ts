@@ -1,6 +1,7 @@
 import isIp from 'is-ip'
 
 import { copyToClipboard } from '../clipboard'
+import cast from './cast'
 
 const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
@@ -40,48 +41,13 @@ console.log('hostname', hostname)
 console.log('port', port)
 console.log('pathname', pathname)
 
-const localhost = isLocalHost(hostname) || isIp(hostname)
-
-const secure = protocol === 'https:'
-
-let socket: WebSocket = null
-let connected = false
-let connecting = false
+const isLocalOrIp = isLocalHost(hostname) || isIp(hostname)
 
 let _stream: MediaStream = null
-
-let recording = false
+let curr_cast: CastSession = null
 
 let _playbackId: string = null
 let _streamKey: string | undefined
-
-let _mimeType: string | undefined
-
-function initMimeType() {
-  if (!window.MediaRecorder) {
-    return
-  }
-
-  const types = [
-    'video/webm;codecs=h264',
-    'video/webm',
-    'video/webm;codecs=opus',
-    'video/webm;codecs=vp8',
-    'video/webm;codecs=daala',
-    'video/mpeg',
-    'video/mp4',
-  ]
-
-  for (const type of types) {
-    const supported = MediaRecorder.isTypeSupported(type)
-    if (supported) {
-      _mimeType = type
-      break
-    }
-  }
-
-  console.log('_mimeType', _mimeType)
-}
 
 async function initStreamData() {
   const segments = location.pathname.substr(1).split('/', 2)
@@ -103,119 +69,57 @@ async function initStreamData() {
   _playbackId = humanId
   _streamKey = streamKey
 
-  const portStr = localhost ? `:${port}` : ''
+  const portStr = isLocalOrIp ? `:${port}` : ''
   playbackUrl.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
-
-function send(data) {
-  socket.send(data)
-}
-
-function querystring(params: Record<string, any>) {
-  const escape = encodeURIComponent
-  const raw = Object.keys(params)
-    .filter((k) => !!params[k])
-    .map((k) => escape(k) + '=' + escape(params[k].toString()))
-    .join('&')
-  return raw.length === 0 ? '' : '?' + raw
-}
-
-function connect(
-  onOpen: (event: Event) => void,
-  onClose: (event: CloseEvent) => void
-) {
-  connecting = true
-
-  const protocol = !localhost && secure ? 'wss' : 'ws'
-  const portStr = localhost ? `:${port}` : ''
-  const query = querystring({
-    mimeType: _mimeType,
-    ignoreCookies: !_playbackId,
-  })
-  const url = `${protocol}://${hostname}${portStr}/ingest/ws/${_streamKey}${query}`
-
-  console.log('socket', 'url', url)
-
-  socket = new WebSocket(url)
-
-  socket.addEventListener('open', function (event) {
-    console.log('socket', 'open')
-
-    connected = true
-    connecting = false
-
-    onOpen(event)
-  })
-
-  socket.addEventListener('close', function (event) {
-    console.log('socket', 'close', event.code, event.reason)
-
-    connected = false
-    connecting = false
-
-    onClose(event)
-  })
-
-  socket.addEventListener('message', (event) => {
-    const { data: message } = event
-    const data = JSON.parse(message)
-
-    console.log('socket', 'message', data)
-  })
-
-  socket.addEventListener('error', (event) => {
-    console.log('socket', 'error', event)
-  })
-}
-
-function disconnect(code?: number) {
-  socket.close(code)
-  socket = null
-}
-
-let media_recorder = null
 
 let record_frash_dim = false
 
 const minRetryThreshold = 60 * 1000 // 1 min
 
+type Transport = 'wrtc' | 'ws'
+const allTransports: Transport[] = ['wrtc', 'ws']
+
+function requested_transport() {
+  const match = location.search.match(/transport=([^&]+)/)
+  if (!match) {
+    return null
+  }
+  const asTransp = match[1] as Transport
+  return allTransports.indexOf(asTransp) >= 0 ? asTransp : null
+}
+
 function start_recording(stream: MediaStream) {
-  if (recording || !window.MediaRecorder || !_streamKey) {
+  if (curr_cast || !window.MediaRecorder || !_streamKey) {
     return
   }
-
   console.log('start_recording')
 
-  recording = true
-
-  setup_media_recorder(stream)
-
+  const transport =
+    requested_transport() ??
+    (cast.wsMimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
   const connectTime = Date.now()
-  connect(
-    (openEvent) => {
-      if (recording) {
-        start_media_recorder()
-      }
-    },
-    (closeEvent) => {
-      if (!recording) {
-        return
-      }
+  let newCast: CastSession
+  if (transport === 'wrtc') {
+    newCast = cast.viaWebRTC(stream, _streamKey)
+  } else {
+    newCast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
+  }
+  curr_cast = newCast
 
-      const { code } = closeEvent
-
-      if (code !== 1000) {
-        stop_recording()
-      }
-
-      const connectionAge = Date.now() - connectTime
-      const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
-      if (shouldRetry) {
-        console.log('restarting streaming due to ws 1006 error')
-        start_recording(stream)
-      }
+  newCast.onError = (isTransient) => {
+    if (curr_cast !== newCast) {
+      return
     }
-  )
+    stop_recording()
+    curr_cast = null
+
+    const connectionAge = Date.now() - connectTime
+    const shouldRetry = isTransient && connectionAge >= minRetryThreshold
+    if (shouldRetry) {
+      start_recording(stream)
+    }
+  }
 
   record.style.background = '#dd0000'
   record.style.borderColor = '#dd0000'
@@ -238,18 +142,13 @@ function start_recording(stream: MediaStream) {
 let record_flash_interval
 
 function stop_recording() {
-  if (!recording) {
+  if (!curr_cast) {
     return
   }
-
   console.log('stop_recording')
 
-  recording = false
-
-  media_recorder.ondataavailable = null
-  stop_media_recorder()
-
-  disconnect(1000)
+  curr_cast.close()
+  curr_cast = null
 
   record.style.opacity = '1'
   record.style.background = '#dddddd'
@@ -261,7 +160,7 @@ function stop_recording() {
 }
 
 function refresh_recording(stream: MediaStream): void {
-  if (recording && connected) {
+  if (curr_cast) {
     stop_recording()
     start_recording(stream)
   }
@@ -344,51 +243,6 @@ async function refresh_media_to_user(): Promise<void> {
   refresh_recording(stream)
 }
 
-function setup_media_recorder(stream: MediaStream): void {
-  if (media_recorder) {
-    media_recorder.ondataavailable = null
-    stop_media_recorder()
-  }
-
-  media_recorder = new MediaRecorder(stream, {
-    mimeType: _mimeType,
-    audioBitsPerSecond: 128 * 1024,
-    videoBitsPerSecond: 3 * 1024 * 1024,
-  })
-
-  media_recorder.ondataavailable = function (event) {
-    const { data } = event
-    if (recording && connected) {
-      send(data)
-    }
-  }
-}
-
-const MEDIA_RECORDER_T = 2000
-
-let media_recorder_started = false
-
-function start_media_recorder(): void {
-  if (media_recorder_started) {
-    return
-  }
-  console.log('start_media_recorder')
-  media_recorder_started = true
-  media_recorder.start(MEDIA_RECORDER_T)
-}
-
-function stop_media_recorder(): void {
-  if (!media_recorder_started) {
-    return
-  }
-  media_recorder_started = false
-  console.log('stop_media_recorder')
-  if (media_recorder.state === 'inactive') {
-    return
-  }
-  media_recorder.stop()
-}
-
 function set_video_stream(stream: MediaStream): void {
   _stream = stream
 
@@ -401,7 +255,6 @@ video.style.transition = 'opacity 0.2s linear'
 
 player.volume(0)
 
-initMimeType()
 initStreamData()
 
 set_media_to_user()
@@ -410,7 +263,7 @@ set_media_to_user()
 record_container.style.display = 'block'
 
 record_container.onclick = () => {
-  if (recording) {
+  if (curr_cast) {
     stop_recording()
   } else {
     start_recording(_stream)
