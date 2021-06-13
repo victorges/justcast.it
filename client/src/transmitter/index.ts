@@ -76,22 +76,32 @@ async function initStreamData() {
 
 let record_frash_dim = false
 
+const minRetryThreshold = 60 * 1000 // 1 min
+
 function start_recording(stream: MediaStream) {
   if (curr_cast || !window.MediaRecorder || !_streamKey) {
     return
   }
   console.log('start_recording')
 
+  const connectTime = Date.now()
   if (mimeType.indexOf('h264') > 0) {
     curr_cast = castToWebSocket(stream, _streamKey, !_playbackId)
   } else {
     curr_cast = castToWebRTC(stream, _streamKey)
   }
-  curr_cast.onClosed = () => {
-    if (curr_cast) {
-      stop_recording()
+  curr_cast.onClosed = (isTransientErr) => {
+    if (!curr_cast) {
+      return
     }
+    stop_recording()
     curr_cast = null
+
+    const connectionAge = Date.now() - connectTime
+    const shouldRetry = isTransientErr && connectionAge >= minRetryThreshold
+    if (shouldRetry) {
+      start_recording(stream)
+    }
   }
 
   record.style.background = '#dd0000'

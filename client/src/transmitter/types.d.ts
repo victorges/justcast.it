@@ -5,6 +5,6 @@ declare global {
     stop(): void
 
     onConnected?: () => void
-    onClosed?: () => void
+    onClosed?: (isTransientErr?: boolean) => void
   }
 }

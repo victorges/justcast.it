@@ -76,8 +76,6 @@ function connect(streamKey: string, ignoreCookies: boolean) {
   return socket
 }
 
-const minRetryThreshold = 60 * 1000 // 1 min
-
 function stop_recording(media_recorder: MediaRecorder, socket: WebSocket) {
   console.log('stop_recording')
 
@@ -107,16 +105,12 @@ function start_media_recorder(media_recorder: MediaRecorder): void {
 }
 
 function stop_media_recorder(media_recorder: MediaRecorder): void {
-  if (media_recorder.state !== 'recording') {
+  if (media_recorder.state === 'inactive') {
     return
   }
   console.log('stop_media_recorder')
   media_recorder.stop()
 }
-
-// const currCast: CastSession = {
-//   stop: stop_recording,
-// }
 
 function castToWebSocket(
   stream: MediaStream,
@@ -128,7 +122,6 @@ function castToWebSocket(
   }
   console.log('castToWebSocket')
 
-  const connectTime = Date.now()
   const socket = connect(streamKey, ignoreCookies)
   const recorder = new_media_recorder(stream)
 
@@ -151,23 +144,12 @@ function castToWebSocket(
     start_media_recorder(recorder)
     cast.onConnected?.call(cast)
   })
-  socket.addEventListener('close', (event) => {
-    console.log('socket', 'close', event.code, event.reason)
+  socket.addEventListener('close', ({ code, reason }) => {
+    console.log('socket', 'close', code, reason)
     connected = false
 
-    const { code } = event
-    if (code !== 1000) {
-      stop_recording(recorder, socket)
-    }
-
-    const connectionAge = Date.now() - connectTime
-    const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
-    if (shouldRetry) {
-      console.log('restarting streaming due to ws 1006 error')
-      castToWebSocket(stream, streamKey, ignoreCookies)
-    } else {
-      cast.onClosed?.call(cast)
-    }
+    stop_recording(recorder, socket)
+    cast.onClosed?.call(cast, code === 1006)
   })
 
   return cast
