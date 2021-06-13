@@ -26,11 +26,7 @@ fetch(`/api/stream/${humanId}`)
     if (res.status === 200) {
       return res.json()
     }
-    const playbackUrl = humanId.startsWith('https://')
-      ? humanId
-      : humanId.startsWith('cdn.')
-      ? `https://${humanId}`
-      : `https://cdn.livepeer.com/hls/${humanId}/index.m3u8`
+    const playbackUrl = `https://cdn.livepeer.com/hls/${humanId}/index.m3u8`
     return { playbackUrl }
   })
   .then((info) => {
