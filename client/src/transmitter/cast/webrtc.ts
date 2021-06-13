@@ -47,7 +47,9 @@ function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
     }
     try {
       const remoteDesc = await iceHandshake(streamKey, pc.localDescription)
-      await pc.setRemoteDescription(remoteDesc)
+      if (pc.signalingState !== 'closed') {
+        await pc.setRemoteDescription(remoteDesc)
+      }
     } catch (err) {
       log(err)
       cast.onError()
