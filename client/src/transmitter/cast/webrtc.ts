@@ -18,7 +18,8 @@ async function iceHandshake(
   if (answer.status !== 200) {
     throw new Error(`Error response from server: ${answer.status}`)
   }
-  return (await answer.json()) as RTCSessionDescriptionInit
+  const sessionInit = await answer.json()
+  return new RTCSessionDescription(sessionInit)
 }
 
 function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
@@ -29,41 +30,50 @@ function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
       },
     ],
   })
-  const cast: CastSession = { stop: () => pc.close() }
+  const cast: CastSession = {
+    stop: () => pc.close(),
+    onConnected: () => {},
+    onClosed: () => {},
+  }
 
   stream.getTracks().forEach((track) => pc.addTrack(track, stream))
 
   pc.oniceconnectionstatechange = () =>
     log('ice connection state', pc.iceConnectionState)
-  pc.onicegatheringstatechange = () => {
+  pc.onicegatheringstatechange = async () => {
     if (pc.iceGatheringState !== 'complete') {
       return
     }
-    iceHandshake(streamKey, pc.localDescription)
-      .then(async (remoteDesc) => {
-        await pc.setRemoteDescription(new RTCSessionDescription(remoteDesc))
-      })
-      .catch(log)
+    try {
+      const remoteDesc = await iceHandshake(streamKey, pc.localDescription)
+      await pc.setRemoteDescription(remoteDesc)
+    } catch (err) {
+      log(err)
+    }
   }
   pc.onconnectionstatechange = () => {
     const state = pc.connectionState
     log('connection state', state)
     switch (state) {
       case 'connected':
-        cast.onConnected?.call(cast)
+        cast.onConnected()
         break
       case 'closed':
-        cast.onClosed?.call(cast)
+        cast.onClosed()
         break
     }
   }
 
-  pc.createOffer()
-    .then((offer) => pc.setLocalDescription(offer))
-    .catch((err) => {
+  const initPeerConn = async () => {
+    try {
+      const offer = await pc.createOffer()
+      await pc.setLocalDescription(offer)
+    } catch (err) {
       log('create offer err', err)
-      cast.onClosed?.call(cast)
-    })
+      cast.onClosed(true)
+    }
+  }
+  initPeerConn()
 
   return cast
 }

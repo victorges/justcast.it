@@ -6,7 +6,7 @@ const isLocalHost = (hostname) => {
 
 const { hostname, port, protocol } = location
 
-const localhost = isLocalHost(hostname) || isIp(hostname)
+const isLocalOrIp = isLocalHost(hostname) || isIp(hostname)
 
 const secure = protocol === 'https:'
 
@@ -50,12 +50,9 @@ function querystring(params: Record<string, any>) {
 }
 
 function connect(streamKey: string, ignoreCookies: boolean) {
-  const protocol = !localhost && secure ? 'wss' : 'ws'
-  const portStr = localhost ? `:${port}` : ''
-  const query = querystring({
-    mimeType: mimeType,
-    ignoreCookies: ignoreCookies,
-  })
+  const protocol = !isLocalOrIp && secure ? 'wss' : 'ws'
+  const portStr = isLocalOrIp ? `:${port}` : ''
+  const query = querystring({ mimeType, ignoreCookies })
   const url = `${protocol}://${hostname}${portStr}/ingest/ws/${streamKey}${query}`
 
   console.log('socket', 'url', url)
@@ -127,6 +124,8 @@ function castViaWebSocket(
 
   const cast: CastSession = {
     stop: () => stop_recording(recorder, socket),
+    onConnected: () => {},
+    onClosed: () => {},
   }
 
   let connected = false
@@ -142,14 +141,14 @@ function castViaWebSocket(
     connected = true
 
     start_media_recorder(recorder)
-    cast.onConnected?.call(cast)
+    cast.onConnected()
   })
   socket.addEventListener('close', ({ code, reason }) => {
     console.log('socket', 'close', code, reason)
     connected = false
 
     stop_recording(recorder, socket)
-    cast.onClosed?.call(cast, code === 1006)
+    cast.onClosed(code === 1006)
   })
 
   return cast

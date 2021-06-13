@@ -41,7 +41,7 @@ console.log('hostname', hostname)
 console.log('port', port)
 console.log('pathname', pathname)
 
-const localhost = isLocalHost(hostname) || isIp(hostname)
+const isLocalOrIp = isLocalHost(hostname) || isIp(hostname)
 
 let _stream: MediaStream = null
 let curr_cast: CastSession = null
@@ -69,7 +69,7 @@ async function initStreamData() {
   _playbackId = humanId
   _streamKey = streamKey
 
-  const portStr = localhost ? `:${port}` : ''
+  const portStr = isLocalOrIp ? `:${port}` : ''
   playbackUrl.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
 
@@ -77,13 +77,16 @@ let record_frash_dim = false
 
 const minRetryThreshold = 60 * 1000 // 1 min
 
+type Transport = 'wrtc' | 'ws'
+const allTransports: Transport[] = ['wrtc', 'ws']
+
 function requested_transport() {
   const match = location.search.match(/transport=([^&]+)/)
   if (!match) {
     return null
   }
-  const allowedTransports = ['wrtc', 'ws']
-  return allowedTransports.indexOf(match[1]) > 0 ? match[1] : null
+  const asTransp = match[1] as Transport
+  return allTransports.indexOf(asTransp) >= 0 ? asTransp : null
 }
 
 function start_recording(stream: MediaStream) {
@@ -96,10 +99,10 @@ function start_recording(stream: MediaStream) {
     requested_transport() ??
     (cast.wsMimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
   const connectTime = Date.now()
-  if (transport === 'ws') {
-    curr_cast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
-  } else {
+  if (transport === 'wrtc') {
     curr_cast = cast.viaWebRTC(stream, _streamKey)
+  } else {
+    curr_cast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
   }
   curr_cast.onClosed = (isTransientErr) => {
     if (!curr_cast) {
