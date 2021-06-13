@@ -112,7 +112,7 @@ function stop_media_recorder(media_recorder: MediaRecorder): void {
   media_recorder.stop()
 }
 
-function castToWebSocket(
+function castViaWebSocket(
   stream: MediaStream,
   streamKey: string,
   ignoreCookies: boolean
@@ -155,4 +155,4 @@ function castToWebSocket(
   return cast
 }
 
-export default castToWebSocket
+export default castViaWebSocket

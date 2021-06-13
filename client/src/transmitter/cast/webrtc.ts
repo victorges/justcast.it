@@ -21,7 +21,7 @@ async function iceHandshake(
   return (await answer.json()) as RTCSessionDescriptionInit
 }
 
-function castToWebRTC(stream: MediaStream, streamKey: string): CastSession {
+function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
   const pc = new RTCPeerConnection({
     iceServers: [
       {
@@ -68,4 +68,4 @@ function castToWebRTC(stream: MediaStream, streamKey: string): CastSession {
   return cast
 }
 
-export default castToWebRTC
+export default castViaWebRTC

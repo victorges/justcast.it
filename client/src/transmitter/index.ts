@@ -1,8 +1,7 @@
 import isIp from 'is-ip'
 
 import { copyToClipboard } from '../clipboard'
-import castToWebRTC from './webrtc'
-import castToWebSocket, { mimeType } from './websocket'
+import cast from './cast'
 
 const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
@@ -94,12 +93,13 @@ function start_recording(stream: MediaStream) {
   console.log('start_recording')
 
   const transport =
-    requested_transport() ?? (mimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
+    requested_transport() ??
+    (cast.wsMimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
   const connectTime = Date.now()
   if (transport === 'ws') {
-    curr_cast = castToWebSocket(stream, _streamKey, !_playbackId)
+    curr_cast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
   } else {
-    curr_cast = castToWebRTC(stream, _streamKey)
+    curr_cast = cast.viaWebRTC(stream, _streamKey)
   }
   curr_cast.onClosed = (isTransientErr) => {
     if (!curr_cast) {
