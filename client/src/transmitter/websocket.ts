@@ -4,24 +4,11 @@ const isLocalHost = (hostname) => {
   return hostname === 'localhost' || hostname.endsWith('.localhost')
 }
 
-const { hostname, pathname, port, protocol } = location
-
-console.log('protocol', protocol)
-console.log('hostname', hostname)
-console.log('port', port)
-console.log('pathname', pathname)
+const { hostname, port, protocol } = location
 
 const localhost = isLocalHost(hostname) || isIp(hostname)
 
 const secure = protocol === 'https:'
-
-let socket: WebSocket = null
-let connected = false
-let connecting = false
-
-let recording = false
-
-let _playbackId: string = null
 
 function getMimeType() {
   if (!window.MediaRecorder) {
@@ -53,10 +40,6 @@ function getMimeType() {
 
 export const mimeType = getMimeType()
 
-function send(data) {
-  socket.send(data)
-}
-
 function querystring(params: Record<string, any>) {
   const escape = encodeURIComponent
   const raw = Object.keys(params)
@@ -66,42 +49,18 @@ function querystring(params: Record<string, any>) {
   return raw.length === 0 ? '' : '?' + raw
 }
 
-function connect(
-  streamKey: string,
-  onOpen: (event: Event) => void,
-  onClose: (event: CloseEvent) => void
-) {
-  connecting = true
-
+function connect(streamKey: string, ignoreCookies: boolean) {
   const protocol = !localhost && secure ? 'wss' : 'ws'
   const portStr = localhost ? `:${port}` : ''
   const query = querystring({
     mimeType: mimeType,
-    ignoreCookies: !_playbackId,
+    ignoreCookies: ignoreCookies,
   })
   const url = `${protocol}://${hostname}${portStr}/ingest/ws/${streamKey}${query}`
 
   console.log('socket', 'url', url)
 
-  socket = new WebSocket(url)
-
-  socket.addEventListener('open', function (event) {
-    console.log('socket', 'open')
-
-    connected = true
-    connecting = false
-
-    onOpen(event)
-  })
-
-  socket.addEventListener('close', function (event) {
-    console.log('socket', 'close', event.code, event.reason)
-
-    connected = false
-    connecting = false
-
-    onClose(event)
-  })
+  const socket = new WebSocket(url)
 
   socket.addEventListener('message', (event) => {
     const { data: message } = event
@@ -113,123 +72,105 @@ function connect(
   socket.addEventListener('error', (event) => {
     console.log('socket', 'error', event)
   })
-}
 
-function disconnect(code?: number) {
-  socket.close(code)
-  socket = null
+  return socket
 }
-
-let media_recorder = null
 
 const minRetryThreshold = 60 * 1000 // 1 min
 
-function stop_recording() {
-  if (!recording) {
-    return
-  }
-
+function stop_recording(media_recorder: MediaRecorder, socket: WebSocket) {
   console.log('stop_recording')
 
-  recording = false
-
   media_recorder.ondataavailable = null
-  stop_media_recorder()
+  stop_media_recorder(media_recorder)
 
-  disconnect(1000)
+  socket.close(1000)
 }
 
-function setup_media_recorder(stream: MediaStream): void {
-  if (media_recorder) {
-    media_recorder.ondataavailable = null
-    stop_media_recorder()
-  }
-
-  media_recorder = new MediaRecorder(stream, {
+function new_media_recorder(stream: MediaStream): MediaRecorder {
+  const recorder = new MediaRecorder(stream, {
     mimeType: mimeType,
     audioBitsPerSecond: 128 * 1000,
     videoBitsPerSecond: 3 * 1024 * 1024,
   })
-
-  media_recorder.ondataavailable = function (event) {
-    const { data } = event
-    if (recording && connected) {
-      send(data)
-    }
-  }
+  return recorder
 }
 
 const MEDIA_RECORDER_T = 2000
 
-let media_recorder_started = false
-
-function start_media_recorder(): void {
-  if (media_recorder_started) {
+function start_media_recorder(media_recorder: MediaRecorder): void {
+  if (media_recorder.state === 'recording') {
     return
   }
   console.log('start_media_recorder')
-  media_recorder_started = true
   media_recorder.start(MEDIA_RECORDER_T)
 }
 
-function stop_media_recorder(): void {
-  if (!media_recorder_started) {
+function stop_media_recorder(media_recorder: MediaRecorder): void {
+  if (media_recorder.state !== 'recording') {
     return
   }
-  media_recorder_started = false
   console.log('stop_media_recorder')
-  if (media_recorder.state === 'inactive') {
-    return
-  }
   media_recorder.stop()
 }
 
-const currCast: CastSession = {
-  stop: stop_recording,
-}
+// const currCast: CastSession = {
+//   stop: stop_recording,
+// }
 
-function castToWebSocket(stream: MediaStream, streamKey: string): CastSession {
-  if (recording || !window.MediaRecorder || !streamKey) {
+function castToWebSocket(
+  stream: MediaStream,
+  streamKey: string,
+  ignoreCookies: boolean
+): CastSession {
+  if (!window.MediaRecorder || !streamKey) {
     return null
   }
-
-  console.log('start_recording')
-
-  recording = true
-
-  setup_media_recorder(stream)
+  console.log('castToWebSocket')
 
   const connectTime = Date.now()
-  connect(
-    streamKey,
-    (openEvent) => {
-      if (recording) {
-        start_media_recorder()
-      }
-      currCast.onConnected?.call(currCast)
-    },
-    (closeEvent) => {
-      if (!recording) {
-        return
-      }
+  const socket = connect(streamKey, ignoreCookies)
+  const recorder = new_media_recorder(stream)
 
-      const { code } = closeEvent
+  const cast: CastSession = {
+    stop: () => stop_recording(recorder, socket),
+  }
 
-      if (code !== 1000) {
-        stop_recording()
-      }
-
-      const connectionAge = Date.now() - connectTime
-      const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
-      if (shouldRetry) {
-        console.log('restarting streaming due to ws 1006 error')
-        castToWebSocket(stream, streamKey)
-      } else {
-        currCast.onClosed?.call(currCast)
-      }
+  let connected = false
+  recorder.ondataavailable = function (event) {
+    const { data } = event
+    if (connected) {
+      socket.send(data)
     }
-  )
-  return currCast
+  }
+
+  socket.addEventListener('open', () => {
+    console.log('socket', 'open')
+    connected = true
+
+    start_media_recorder(recorder)
+    cast.onConnected?.call(cast)
+  })
+  socket.addEventListener('close', (event) => {
+    console.log('socket', 'close', event.code, event.reason)
+    connected = false
+
+    const { code } = event
+    if (code !== 1000) {
+      stop_recording(recorder, socket)
+    }
+
+    const connectionAge = Date.now() - connectTime
+    const shouldRetry = code === 1006 && connectionAge >= minRetryThreshold
+    if (shouldRetry) {
+      console.log('restarting streaming due to ws 1006 error')
+      castToWebSocket(stream, streamKey, ignoreCookies)
+    } else {
+      cast.onClosed?.call(cast)
+    }
+  })
+
+  return cast
 }
 
 export default castToWebSocket

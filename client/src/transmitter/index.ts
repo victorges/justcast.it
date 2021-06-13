@@ -83,7 +83,7 @@ function start_recording(stream: MediaStream) {
   console.log('start_recording')
 
   if (mimeType.indexOf('h264') > 0) {
-    curr_cast = castToWebSocket(stream, _streamKey)
+    curr_cast = castToWebSocket(stream, _streamKey, !_playbackId)
   } else {
     curr_cast = castToWebRTC(stream, _streamKey)
   }
