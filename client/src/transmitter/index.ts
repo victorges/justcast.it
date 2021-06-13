@@ -99,20 +99,23 @@ function start_recording(stream: MediaStream) {
     requested_transport() ??
     (cast.wsMimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
   const connectTime = Date.now()
+  let newCast: CastSession
   if (transport === 'wrtc') {
-    curr_cast = cast.viaWebRTC(stream, _streamKey)
+    newCast = cast.viaWebRTC(stream, _streamKey)
   } else {
-    curr_cast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
+    newCast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
   }
-  curr_cast.onClosed = (isTransientErr) => {
-    if (!curr_cast) {
+  curr_cast = newCast
+
+  newCast.onError = (isTransient) => {
+    if (curr_cast !== newCast) {
       return
     }
     stop_recording()
     curr_cast = null
 
     const connectionAge = Date.now() - connectTime
-    const shouldRetry = isTransientErr && connectionAge >= minRetryThreshold
+    const shouldRetry = isTransient && connectionAge >= minRetryThreshold
     if (shouldRetry) {
       start_recording(stream)
     }
@@ -144,7 +147,7 @@ function stop_recording() {
   }
   console.log('stop_recording')
 
-  curr_cast.stop()
+  curr_cast.close()
   curr_cast = null
 
   record.style.opacity = '1'

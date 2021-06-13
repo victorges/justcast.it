@@ -123,9 +123,10 @@ function castViaWebSocket(
   const recorder = new_media_recorder(stream)
 
   const cast: CastSession = {
-    stop: () => stop_recording(recorder, socket),
-    onConnected: () => {},
-    onClosed: () => {},
+    close: () => stop_recording(recorder, socket),
+    onOpen: () => {},
+    onClose: () => {},
+    onError: () => {},
   }
 
   let connected = false
@@ -141,14 +142,18 @@ function castViaWebSocket(
     connected = true
 
     start_media_recorder(recorder)
-    cast.onConnected()
+    cast.onOpen()
   })
   socket.addEventListener('close', ({ code, reason }) => {
     console.log('socket', 'close', code, reason)
     connected = false
 
     stop_recording(recorder, socket)
-    cast.onClosed(code === 1006)
+
+    if (code !== 1000) {
+      cast.onError(code === 1006)
+    }
+    cast.onClose()
   })
 
   return cast

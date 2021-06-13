@@ -31,9 +31,10 @@ function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
     ],
   })
   const cast: CastSession = {
-    stop: () => pc.close(),
-    onConnected: () => {},
-    onClosed: () => {},
+    close: () => pc.close(),
+    onOpen: () => {},
+    onClose: () => {},
+    onError: () => {},
   }
 
   stream.getTracks().forEach((track) => pc.addTrack(track, stream))
@@ -49,6 +50,7 @@ function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
       await pc.setRemoteDescription(remoteDesc)
     } catch (err) {
       log(err)
+      cast.onError()
     }
   }
   pc.onconnectionstatechange = () => {
@@ -56,10 +58,10 @@ function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
     log('connection state', state)
     switch (state) {
       case 'connected':
-        cast.onConnected()
+        cast.onOpen()
         break
       case 'closed':
-        cast.onClosed()
+        cast.onClose()
         break
     }
   }
@@ -70,7 +72,7 @@ function castViaWebRTC(stream: MediaStream, streamKey: string): CastSession {
       await pc.setLocalDescription(offer)
     } catch (err) {
       log('create offer err', err)
-      cast.onClosed(true)
+      cast.onError()
     }
   }
   initPeerConn()

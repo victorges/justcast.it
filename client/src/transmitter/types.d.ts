@@ -2,8 +2,9 @@ export {}
 
 declare global {
   interface CastSession {
-    stop(): void
-    onConnected: () => void
-    onClosed: (isTransientErr?: boolean) => void
+    close(): void
+    onOpen: () => void
+    onClose: () => void
+    onError: (isTransient?: boolean) => void
   }
 }
