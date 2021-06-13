@@ -11,30 +11,26 @@ const isFilename = (str: string) => {
 }
 
 files.get('*', (req, res, next) => {
-  res.set('Feature-Policy', "camera *; microphone *;")
+  res.set('Feature-Policy', 'camera *; microphone *;')
   next()
 })
 
 files.get('*', (req, res) => {
-  const { url } = req
+  const path_segments = req.path.substr(1).split('/', 2)
 
-  const url_segments = url.split('/').slice(1)
-  const url_segments_length = url_segments.length
-
-  const url_first_segment = url_segments[0]
+  const path_first_segment = path_segments[0]
+  const path_last_segment = path_segments[path_segments.length - 1] || ''
 
   let subfolder: string
-  if (['', 'transmitter', 'to'].includes(url_first_segment)) {
+  if (['', 'transmitter', 'to'].includes(path_first_segment)) {
     subfolder = 'transmitter'
   } else {
     subfolder = 'receiver'
   }
 
-  const url_last_segment = url_segments[url_segments_length - 1] || ''
-
   let file_name: string
-  if (isFilename(url_last_segment)) {
-    file_name = url_last_segment
+  if (isFilename(path_last_segment)) {
+    file_name = path_last_segment
   } else {
     file_name = 'index.html'
   }
