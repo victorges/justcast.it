@@ -45,8 +45,7 @@ console.log('pathname', pathname)
 const localhost = isLocalHost(hostname) || isIp(hostname)
 
 let _stream: MediaStream = null
-
-let recording = false
+let curr_cast: CastSession = null
 
 let _playbackId: string = null
 let _streamKey: string | undefined
@@ -77,16 +76,11 @@ async function initStreamData() {
 
 let record_frash_dim = false
 
-let curr_cast: CastSession | null = null
-
 function start_recording(stream: MediaStream) {
-  if (recording || !window.MediaRecorder || !_streamKey) {
+  if (curr_cast || !window.MediaRecorder || !_streamKey) {
     return
   }
-
   console.log('start_recording')
-
-  recording = true
 
   if (mimeType.indexOf('h264') > 0) {
     curr_cast = castToWebSocket(stream, _streamKey)
@@ -94,7 +88,7 @@ function start_recording(stream: MediaStream) {
     curr_cast = castToWebRTC(stream, _streamKey)
   }
   curr_cast.onClosed = () => {
-    if (recording) {
+    if (curr_cast) {
       stop_recording()
     }
     curr_cast = null
@@ -121,15 +115,13 @@ function start_recording(stream: MediaStream) {
 let record_flash_interval
 
 function stop_recording() {
-  if (!recording) {
+  if (!curr_cast) {
     return
   }
-
   console.log('stop_recording')
 
-  recording = false
-
-  curr_cast?.stop()
+  curr_cast.stop()
+  curr_cast = null
 
   record.style.opacity = '1'
   record.style.background = '#dddddd'
@@ -141,7 +133,7 @@ function stop_recording() {
 }
 
 function refresh_recording(stream: MediaStream): void {
-  if (recording) {
+  if (curr_cast) {
     stop_recording()
     start_recording(stream)
   }
@@ -244,7 +236,7 @@ set_media_to_user()
 record_container.style.display = 'block'
 
 record_container.onclick = () => {
-  if (recording) {
+  if (curr_cast) {
     stop_recording()
   } else {
     start_recording(_stream)
