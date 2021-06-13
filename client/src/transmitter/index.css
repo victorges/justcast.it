@@ -36,7 +36,7 @@ body {
   font-family: monospace;
   top: 15px;
   left: 50%;
-  font-size: 18px;
+  font-size: 16px;
   padding: 9px;
   border-radius: 6px;
   transition: opacity 0.2s linear;
@@ -44,6 +44,8 @@ body {
   user-select: none;
   pointer-events: none;
   max-width: 80%;
+  word-break: break-all;
+  text-align: center;
 }
 
 #playbackUrl.visible {
