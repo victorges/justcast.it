@@ -268,7 +268,7 @@ async function setMediaToDisplay(): Promise<MediaStream> {
 
   clearCanvas()
 
-  _canvas.style.transform = ''
+  _canvas.style.transform = 'translate(-50%, -50%)'
 
   return stream
 }
@@ -301,7 +301,7 @@ async function setMediaToUser(): Promise<void> {
 
     clearCanvas()
 
-    _canvas.style.transform = 'scaleX(-1)'
+    _canvas.style.transform = 'translate(-50%, -50%) scaleX(-1)'
   } catch (err) {
     console.log('navigator', 'mediaDevices', 'err', err)
   }
@@ -330,27 +330,28 @@ function setupAnimationFrame() {
   requestAnimationFrame(() => {
     const { innerWidth, innerHeight } = window
 
-    const { videoWidth, videoHeight } = _video
+    const { videoWidth = 0, videoHeight = 0 } = _video
 
-    const videoRatio = videoWidth / videoHeight
+    if (videoWidth > 0) {
+      let scale: number
 
-    let x: number = 0
-    let y: number = 0
+      if (videoWidth > videoHeight) {
+        scale = innerWidth / videoWidth
+        const canvas_height = Math.min(innerHeight, videoHeight * scale)
+        _canvas.height = canvas_height
+        _canvas.style.height = `${canvas_height}px`
+      } else {
+        scale = innerHeight / videoHeight
+        const canvas_width = Math.min(innerWidth, videoWidth * scale)
+        _canvas.width = canvas_width
+        _canvas.style.width = `${canvas_width}px`
+      }
 
-    let width: number
-    let height: number
+      _canvasCtx.resetTransform()
+      _canvasCtx.scale(scale, scale)
 
-    if (innerWidth > innerHeight) {
-      height = innerHeight
-      width = height * videoRatio
-      x = (innerWidth - width) / 2
-    } else {
-      width = innerWidth
-      height = width / videoRatio
-      y = (innerHeight - height) / 2
+      _canvasCtx.drawImage(_video, 0, 0, videoWidth, videoHeight)
     }
-
-    _canvasCtx.drawImage(_video, x, y, width, height)
 
     setupAnimationFrame()
   })
