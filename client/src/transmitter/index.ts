@@ -69,8 +69,6 @@ let _media_display_returned = false
 
 let _record_frash_dim = false
 
-let _microphone_stream: MediaStream
-
 let _record_flash_interval
 
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
@@ -216,9 +214,7 @@ async function setMicrophoneStream(): Promise<void> {
       audio: { echoCancellation: true, noiseSuppression: true },
     })
 
-    _microphone_stream = microphone_stream
-
-    const microphone_tracks = _microphone_stream.getTracks()
+    const microphone_tracks = microphone_stream.getTracks()
 
     for (const microphone_track of microphone_tracks) {
       stream.addTrack(microphone_track)
