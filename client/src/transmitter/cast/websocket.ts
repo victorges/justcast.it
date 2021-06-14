@@ -1,9 +1,8 @@
-import isIp from 'is-ip'
-import isLocalHost from '../util/isLocalHost'
+import isLocalOrIp from '../util/isLocalOrIp'
 
 const { hostname, port, protocol } = location
 
-const is_local_or_ip = isLocalHost(hostname) || isIp(hostname)
+const is_local_or_ip = isLocalOrIp(hostname)
 
 const secure = protocol === 'https:'
 

@@ -1,8 +1,6 @@
-import isIp from 'is-ip'
-
 import { copyToClipboard } from '../clipboard'
 import cast from './cast'
-import isLocalHost from './util/isLocalHost'
+import isLocalOrIp from './util/isLocalOrIp'
 
 const { body } = document
 
@@ -40,7 +38,7 @@ console.log('hostname', hostname)
 console.log('port', port)
 console.log('pathname', pathname)
 
-const is_local_or_ip = isLocalHost(hostname) || isIp(hostname)
+const is_local_or_ip = isLocalOrIp(hostname)
 
 let _stream: MediaStream = null
 let _curr_cast: CastSession = null
