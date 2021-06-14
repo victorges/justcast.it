@@ -92,9 +92,12 @@ function start_recording(stream: MediaStream) {
   }
   console.log('start_recording')
 
-  const transport =
-    requested_transport() ??
-    (cast.wsMimeType.indexOf('h264') > 0 ? 'ws' : 'wrtc')
+  const _requested_transport = requested_transport()
+
+  const is_h264_mime_type = cast.wsMimeType.indexOf('h264') > 0
+
+  const transport = _requested_transport ?? (is_h264_mime_type ? 'ws' : 'wrtc')
+
   const connectTime = Date.now()
   let newCast: CastSession
   if (transport === 'wrtc') {
@@ -123,8 +126,10 @@ function start_recording(stream: MediaStream) {
 
   video.style.opacity = '1'
 
-  if (_playbackId) playbackUrl.classList.add('visible')
-    
+  if (_playbackId) {
+    playbackUrl.classList.add('visible')
+  }
+
   record_flash_interval = setInterval(() => {
     record_frash_dim = !record_frash_dim
 
