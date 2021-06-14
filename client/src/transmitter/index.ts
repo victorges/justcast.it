@@ -25,21 +25,21 @@ window.addEventListener('resize', () => {
 resizeCanvas()
 
 // @ts-ignore
-const _canvas_stream = _canvas.captureStream()
+const _canvasStream = _canvas.captureStream()
 
-const _canvas_ctx = _canvas.getContext('2d')
+const _canvasCtx = _canvas.getContext('2d')
 
 let _stream: MediaStream
 
-const _playback_url = document.getElementById('playback-url')
-_playback_url.onclick = () => {
-  copyToClipboard(_playback_url.innerText)
+const _playbackUrl = document.getElementById('playback-url')
+_playbackUrl.onclick = () => {
+  copyToClipboard(_playbackUrl.innerText)
 }
 
-const _record_container = document.getElementById('record-container')
-_record_container.style.display = 'block'
-_record_container.onclick = () => {
-  if (_curr_cast) {
+const _recordContainer = document.getElementById('record-container')
+_recordContainer.style.display = 'block'
+_recordContainer.onclick = () => {
+  if (_currCast) {
     stopRecording()
   } else {
     if (_stream) {
@@ -50,10 +50,10 @@ _record_container.onclick = () => {
 
 const _record = document.getElementById('record')
 
-const _media_container = document.getElementById('media-container')
-_media_container.style.display = 'block'
-_media_container.onclick = () => {
-  if (_media_display) {
+const _mediaContainer = document.getElementById('media-container')
+_mediaContainer.style.display = 'block'
+_mediaContainer.onclick = () => {
+  if (_mediaDisplay) {
     refreshMediaToUser()
   } else {
     refreshMediaToDisplay()
@@ -62,13 +62,13 @@ _media_container.onclick = () => {
 
 const _media = document.getElementById('media')
 
-let _media_display = false
+let _mediaDisplay = false
 
-let _media_display_returned = false
+let _mediaDisplayReturned = false
 
-let _record_frash_dim = false
+let _recordFrashDim = false
 
-let _record_flash_interval
+let _recordFlashInterval
 
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
 
@@ -84,17 +84,17 @@ console.log('hostname', hostname)
 console.log('port', port)
 console.log('pathname', pathname)
 
-let _video_stream: MediaStream = null
-let _curr_cast: CastSession = null
+let _videoStream: MediaStream = null
+let _currCast: CastSession = null
 
-let _playback_id: string = null
-let _stream_key: string | undefined
+let _playbackId: string = null
+let _streamKey: string | undefined
 
 async function initStreamData() {
   const segments = location.pathname.substr(1).split('/', 2)
   if (segments.length == 2 && segments[0] === 'to') {
-    _stream_key = segments[1]
-    _playback_id = undefined
+    _streamKey = segments[1]
+    _playbackId = undefined
     return
   }
 
@@ -107,11 +107,11 @@ async function initStreamData() {
   const { humanId, streamKey } = await res.json()
   console.log('streaming to', humanId)
 
-  _playback_id = humanId
-  _stream_key = streamKey
+  _playbackId = humanId
+  _streamKey = streamKey
 
   const portStr = port ? `:${port}` : ''
-  _playback_url.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
+  _playbackUrl.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
 
 type Transport = 'wrtc' | 'ws'
@@ -127,38 +127,38 @@ function requestedTransport() {
 }
 
 function startRecording(stream: MediaStream) {
-  if (_curr_cast || !window.MediaRecorder || !_stream_key) {
+  if (_currCast || !window.MediaRecorder || !_streamKey) {
     return
   }
   console.log('startRecording')
 
-  const requested_transport = requestedTransport()
+  const requestedTransp = requestedTransport()
 
-  const is_h264_mime_type = cast.wsMimeType.indexOf('h264') > 0
+  const isH264 = cast.wsMimeType.indexOf('h264') > 0
 
-  const transport = requested_transport ?? (is_h264_mime_type ? 'ws' : 'wrtc')
+  const transport = requestedTransp ?? (isH264 ? 'ws' : 'wrtc')
 
-  const connect_time = Date.now()
+  const connectTime = Date.now()
 
-  let new_cast: CastSession
+  let newCast: CastSession
   if (transport === 'wrtc') {
-    new_cast = cast.viaWebRTC(stream, _stream_key)
+    newCast = cast.viaWebRTC(stream, _streamKey)
   } else {
-    new_cast = cast.viaWebSocket(stream, _stream_key, !_playback_id)
+    newCast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
   }
 
-  _curr_cast = new_cast
+  _currCast = newCast
 
-  new_cast.onError = (isTransient) => {
-    if (_curr_cast !== new_cast) {
+  newCast.onError = (isTransient) => {
+    if (_currCast !== newCast) {
       return
     }
     stopRecording()
-    _curr_cast = null
+    _currCast = null
 
-    const connection_age = Date.now() - connect_time
-    const should_retry = isTransient && connection_age >= MIN_RETRY_THRESHOLD
-    if (should_retry) {
+    const connectionAge = Date.now() - connectTime
+    const shouldRetry = isTransient && connectionAge >= MIN_RETRY_THRESHOLD
+    if (shouldRetry) {
       startRecording(stream)
     }
   }
@@ -168,14 +168,14 @@ function startRecording(stream: MediaStream) {
 
   _video.style.opacity = '1'
 
-  if (_playback_id) {
-    _playback_url.classList.add('visible')
+  if (_playbackId) {
+    _playbackUrl.classList.add('visible')
   }
 
-  _record_flash_interval = setInterval(() => {
-    _record_frash_dim = !_record_frash_dim
+  _recordFlashInterval = setInterval(() => {
+    _recordFrashDim = !_recordFrashDim
 
-    if (_record_frash_dim) {
+    if (_recordFrashDim) {
       _record.style.opacity = '0'
     } else {
       _record.style.opacity = '1'
@@ -184,13 +184,13 @@ function startRecording(stream: MediaStream) {
 }
 
 function stopRecording() {
-  if (!_curr_cast) {
+  if (!_currCast) {
     return
   }
   console.log('stopRecording')
 
-  _curr_cast.close()
-  _curr_cast = null
+  _currCast.close()
+  _currCast = null
 
   _record.style.opacity = '1'
   _record.style.background = '#dddddd'
@@ -198,7 +198,7 @@ function stopRecording() {
 
   _video.style.opacity = '0.5'
 
-  clearInterval(_record_flash_interval)
+  clearInterval(_recordFlashInterval)
 }
 
 async function setupMicrophone(): Promise<void> {
@@ -206,24 +206,24 @@ async function setupMicrophone(): Promise<void> {
   const stream = new MediaStream()
 
   try {
-    const microphone_stream = await navigator.mediaDevices.getUserMedia({
+    const microphoneStream = await navigator.mediaDevices.getUserMedia({
       video: false,
       audio: { echoCancellation: true, noiseSuppression: true },
     })
 
-    const microphone_tracks = microphone_stream.getTracks()
+    const microphoneTracks = microphoneStream.getTracks()
 
-    for (const microphone_track of microphone_tracks) {
-      stream.addTrack(microphone_track)
+    for (const microphoneTrack of microphoneTracks) {
+      stream.addTrack(microphoneTrack)
     }
   } catch (err) {
     console.log('setMicrophoneStream', 'err', err.message)
   }
 
-  const canvas_tracks = _canvas_stream.getTracks()
+  const canvasTracks = _canvasStream.getTracks()
 
-  for (const canvas_track of canvas_tracks) {
-    stream.addTrack(canvas_track)
+  for (const canvasTrack of canvasTracks) {
+    stream.addTrack(canvasTrack)
   }
 
   _stream = stream
@@ -232,8 +232,8 @@ async function setupMicrophone(): Promise<void> {
 async function setMediaToDisplay(): Promise<MediaStream> {
   console.log('setMediaToDisplay')
 
-  _media_display = true
-  _media_display_returned = false
+  _mediaDisplay = true
+  _mediaDisplayReturned = false
 
   let stream: MediaStream
 
@@ -243,27 +243,27 @@ async function setMediaToDisplay(): Promise<MediaStream> {
       .getDisplayMedia({ audio: true, video: true })
   } catch (err) {
     console.log('navigator', 'getDisplayMedia', 'error', err)
-    _media_display = false
+    _mediaDisplay = false
     return
   }
 
-  _media_display_returned = true
+  _mediaDisplayReturned = true
 
   // AD HOC
   // return to user media if user stopped recording
-  const media_tracks = stream.getTracks()
-  const first_media_track = media_tracks[0]
-  if (first_media_track) {
+  const mediaTracks = stream.getTracks()
+  const firstMediaTrack = mediaTracks[0]
+  if (firstMediaTrack) {
     const end_listener = () => {
-      first_media_track.removeEventListener('ended', end_listener)
+      firstMediaTrack.removeEventListener('ended', end_listener)
       refreshMediaToUser()
     }
-    first_media_track.addEventListener('ended', end_listener)
+    firstMediaTrack.addEventListener('ended', end_listener)
   }
 
   setVideoStream(stream)
 
-  _media_container.style.borderRadius = '30px'
+  _mediaContainer.style.borderRadius = '30px'
   _media.style.borderRadius = '15px'
 
   clearCanvas()
@@ -280,13 +280,13 @@ function refreshMediaToDisplay(): void {
 async function setMediaToUser(): Promise<void> {
   console.log('setMediaToUser')
 
-  if (_media_display_returned) {
+  if (_mediaDisplayReturned) {
     // AD HOC
     // stop browser recording
-    _video_stream.getTracks().forEach((track) => track.stop())
+    _videoStream.getTracks().forEach((track) => track.stop())
   }
 
-  _media_display = false
+  _mediaDisplay = false
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -297,7 +297,7 @@ async function setMediaToUser(): Promise<void> {
     setVideoStream(stream)
 
     _media.style.borderRadius = '3px'
-    _media_container.style.borderRadius = '6px'
+    _mediaContainer.style.borderRadius = '6px'
 
     clearCanvas()
 
@@ -312,7 +312,7 @@ function refreshMediaToUser(): void {
 }
 
 function setVideoStream(stream: MediaStream): void {
-  _video_stream = stream
+  _videoStream = stream
   _video.srcObject = stream
 }
 
@@ -332,7 +332,7 @@ function setupAnimationFrame() {
 
     const { videoWidth, videoHeight } = _video
 
-    const video_ratio = videoWidth / videoHeight
+    const videoRatio = videoWidth / videoHeight
 
     let x: number = 0
     let y: number = 0
@@ -342,15 +342,15 @@ function setupAnimationFrame() {
 
     if (innerWidth > innerHeight) {
       height = innerHeight
-      width = height * video_ratio
+      width = height * videoRatio
       x = (innerWidth - width) / 2
     } else {
       width = innerWidth
-      height = width / video_ratio
+      height = width / videoRatio
       y = (innerHeight - height) / 2
     }
 
-    _canvas_ctx.drawImage(_video, x, y, width, height)
+    _canvasCtx.drawImage(_video, x, y, width, height)
 
     setupAnimationFrame()
   })
