@@ -9,21 +9,26 @@ const isLocalHost = (hostname) => {
 
 const { body } = document
 
-const video = document.getElementById('video') as HTMLVideoElement
-const playbackUrl = document.getElementById('playbackUrl')
+const _video = document.getElementById('video') as HTMLVideoElement
 
-const record_container = document.getElementById('record-container')
-const record = document.getElementById('record')
+const _playback_url = document.getElementById('playback-url')
 
-const media_container = document.getElementById('media-container')
-const media = document.getElementById('media')
+const _record_container = document.getElementById('record-container')
+const _record = document.getElementById('record')
 
-let media_display = false
+const _media_container = document.getElementById('media-container')
+const _media = document.getElementById('media')
 
-let media_display_returned = false
+let _media_display = false
 
-playbackUrl.onclick = () => {
-  copyToClipboard(playbackUrl.innerText)
+let _media_display_returned = false
+
+let _record_frash_dim = false
+
+const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
+
+_playback_url.onclick = () => {
+  copyToClipboard(_playback_url.innerText)
 }
 
 // set background to transparent when inside iframe
@@ -41,16 +46,16 @@ console.log('pathname', pathname)
 const isLocalOrIp = isLocalHost(hostname) || isIp(hostname)
 
 let _stream: MediaStream = null
-let curr_cast: CastSession = null
+let _curr_cast: CastSession = null
 
-let _playbackId: string = null
-let _streamKey: string | undefined
+let _playback_id: string = null
+let _stream_key: string | undefined
 
 async function initStreamData() {
   const segments = location.pathname.substr(1).split('/', 2)
   if (segments.length == 2 && segments[0] === 'to') {
-    _streamKey = segments[1]
-    _playbackId = undefined
+    _stream_key = segments[1]
+    _playback_id = undefined
     return
   }
 
@@ -63,21 +68,17 @@ async function initStreamData() {
   const { humanId, streamKey } = await res.json()
   console.log('streaming to', humanId)
 
-  _playbackId = humanId
-  _streamKey = streamKey
+  _playback_id = humanId
+  _stream_key = streamKey
 
   const portStr = isLocalOrIp ? `:${port}` : ''
-  playbackUrl.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
+  _playback_url.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
-
-let record_frash_dim = false
-
-const minRetryThreshold = 60 * 1000 // 1 min
 
 type Transport = 'wrtc' | 'ws'
 const allTransports: Transport[] = ['wrtc', 'ws']
 
-function requested_transport() {
+function requestedTransport() {
   const match = location.search.match(/transport=([^&]+)/)
   if (!match) {
     return null
@@ -86,93 +87,95 @@ function requested_transport() {
   return allTransports.indexOf(asTransp) >= 0 ? asTransp : null
 }
 
-function start_recording(stream: MediaStream) {
-  if (curr_cast || !window.MediaRecorder || !_streamKey) {
+function startRecording(stream: MediaStream) {
+  if (_curr_cast || !window.MediaRecorder || !_stream_key) {
     return
   }
-  console.log('start_recording')
+  console.log('startRecording')
 
-  const _requested_transport = requested_transport()
+  const _requested_transport = requestedTransport()
 
   const is_h264_mime_type = cast.wsMimeType.indexOf('h264') > 0
 
   const transport = _requested_transport ?? (is_h264_mime_type ? 'ws' : 'wrtc')
 
-  const connectTime = Date.now()
-  let newCast: CastSession
-  if (transport === 'wrtc') {
-    newCast = cast.viaWebRTC(stream, _streamKey)
-  } else {
-    newCast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
-  }
-  curr_cast = newCast
+  const connect_time = Date.now()
 
-  newCast.onError = (isTransient) => {
-    if (curr_cast !== newCast) {
+  let new_cast: CastSession
+  if (transport === 'wrtc') {
+    new_cast = cast.viaWebRTC(stream, _stream_key)
+  } else {
+    new_cast = cast.viaWebSocket(stream, _stream_key, !_playback_id)
+  }
+
+  _curr_cast = new_cast
+
+  new_cast.onError = (isTransient) => {
+    if (_curr_cast !== new_cast) {
       return
     }
-    stop_recording()
-    curr_cast = null
+    stopRecording()
+    _curr_cast = null
 
-    const connectionAge = Date.now() - connectTime
-    const shouldRetry = isTransient && connectionAge >= minRetryThreshold
-    if (shouldRetry) {
-      start_recording(stream)
+    const connection_age = Date.now() - connect_time
+    const should_retry = isTransient && connection_age >= MIN_RETRY_THRESHOLD
+    if (should_retry) {
+      startRecording(stream)
     }
   }
 
-  record.style.background = '#dd0000'
-  record.style.borderColor = '#dd0000'
+  _record.style.background = '#dd0000'
+  _record.style.borderColor = '#dd0000'
 
-  video.style.opacity = '1'
+  _video.style.opacity = '1'
 
-  if (_playbackId) {
-    playbackUrl.classList.add('visible')
+  if (_playback_id) {
+    _playback_url.classList.add('visible')
   }
 
-  record_flash_interval = setInterval(() => {
-    record_frash_dim = !record_frash_dim
+  _record_flash_interval = setInterval(() => {
+    _record_frash_dim = !_record_frash_dim
 
-    if (record_frash_dim) {
-      record.style.opacity = '0'
+    if (_record_frash_dim) {
+      _record.style.opacity = '0'
     } else {
-      record.style.opacity = '1'
+      _record.style.opacity = '1'
     }
   }, 1000)
 }
 
-let record_flash_interval
+let _record_flash_interval
 
-function stop_recording() {
-  if (!curr_cast) {
+function stopRecording() {
+  if (!_curr_cast) {
     return
   }
-  console.log('stop_recording')
+  console.log('stopRecording')
 
-  curr_cast.close()
-  curr_cast = null
+  _curr_cast.close()
+  _curr_cast = null
 
-  record.style.opacity = '1'
-  record.style.background = '#dddddd'
-  record.style.borderColor = '#dddddd'
+  _record.style.opacity = '1'
+  _record.style.background = '#dddddd'
+  _record.style.borderColor = '#dddddd'
 
-  video.style.opacity = '0.5'
+  _video.style.opacity = '0.5'
 
-  clearInterval(record_flash_interval)
+  clearInterval(_record_flash_interval)
 }
 
-function refresh_recording(stream: MediaStream): void {
-  if (curr_cast) {
-    stop_recording()
-    start_recording(stream)
+function refreshRecording(stream: MediaStream): void {
+  if (_curr_cast) {
+    stopRecording()
+    startRecording(stream)
   }
 }
 
-async function set_media_to_display(): Promise<MediaStream> {
-  console.log('set_media_to_display')
+async function setMediaToDisplay(): Promise<MediaStream> {
+  console.log('setMediaToDisplay')
 
-  media_display = true
-  media_display_returned = false
+  _media_display = true
+  _media_display_returned = false
 
   let stream: MediaStream
 
@@ -182,11 +185,11 @@ async function set_media_to_display(): Promise<MediaStream> {
       .getDisplayMedia({ audio: true, video: true })
   } catch (err) {
     console.log('navigator', 'getDisplayMedia', 'error', err)
-    media_display = false
+    _media_display = false
     return
   }
 
-  media_display_returned = true
+  _media_display_returned = true
 
   // AD HOC
   // return to user media if user stopped recording
@@ -195,33 +198,34 @@ async function set_media_to_display(): Promise<MediaStream> {
   if (first_media_track) {
     const end_listener = async () => {
       first_media_track.removeEventListener('ended', end_listener)
-      refresh_media_to_user()
+      refreshMediaToUser()
     }
     first_media_track.addEventListener('ended', end_listener)
   }
 
-  set_video_stream(stream)
+  setVideoStream(stream)
 
-  media_container.style.borderRadius = '30px'
-  media.style.borderRadius = '15px'
+  _media_container.style.borderRadius = '30px'
+  _media.style.borderRadius = '15px'
 
   return stream
 }
 
-async function refresh_media_to_display(): Promise<void> {
-  const stream = await set_media_to_display()
-  refresh_recording(stream)
+async function refreshMediaToDisplay(): Promise<void> {
+  const stream = await setMediaToDisplay()
+  refreshRecording(stream)
 }
 
-async function set_media_to_user(): Promise<MediaStream> {
-  console.log('set_media_to_user')
+async function setMediaToUser(): Promise<MediaStream> {
+  console.log('setMediaToUser')
 
-  if (media_display_returned) {
+  if (_media_display_returned) {
+    // AD HOC
     // stop browser recording
     _stream.getTracks().forEach((track) => track.stop())
   }
 
-  media_display = false
+  _media_display = false
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -229,10 +233,10 @@ async function set_media_to_user(): Promise<MediaStream> {
       audio: { echoCancellation: true, noiseSuppression: true },
     })
 
-    set_video_stream(stream)
+    setVideoStream(stream)
 
-    media.style.borderRadius = '3px'
-    media_container.style.borderRadius = '6px'
+    _media.style.borderRadius = '3px'
+    _media_container.style.borderRadius = '6px'
 
     return stream
   } catch (err) {
@@ -240,42 +244,42 @@ async function set_media_to_user(): Promise<MediaStream> {
   }
 }
 
-async function refresh_media_to_user(): Promise<void> {
-  const stream = await set_media_to_user()
-  refresh_recording(stream)
+async function refreshMediaToUser(): Promise<void> {
+  const stream = await setMediaToUser()
+  refreshRecording(stream)
 }
 
-function set_video_stream(stream: MediaStream): void {
+function setVideoStream(stream: MediaStream): void {
   _stream = stream
-  video.srcObject = stream
+  _video.srcObject = stream
 }
 
-video.style.opacity = '0.5'
-video.style.transition = 'opacity 0.2s linear'
+_video.style.opacity = '0.5'
+_video.style.transition = 'opacity 0.2s linear'
 
-video.volume = 0
+_video.volume = 0
 
 initStreamData()
 
-set_media_to_user()
-// set_media_to_display()
+setMediaToUser()
+// setMediaToDisplay()
 
-record_container.style.display = 'block'
+_record_container.style.display = 'block'
 
-record_container.onclick = () => {
-  if (curr_cast) {
-    stop_recording()
+_record_container.onclick = () => {
+  if (_curr_cast) {
+    stopRecording()
   } else {
-    start_recording(_stream)
+    startRecording(_stream)
   }
 }
 
-media_container.style.display = 'block'
+_media_container.style.display = 'block'
 
-media_container.onclick = async () => {
-  if (media_display) {
-    refresh_media_to_user()
+_media_container.onclick = async () => {
+  if (_media_display) {
+    refreshMediaToUser()
   } else {
-    refresh_media_to_display()
+    refreshMediaToDisplay()
   }
 }

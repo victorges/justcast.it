@@ -27,7 +27,7 @@ body {
   /* box-sizing: border-box; */
 }
 
-#playbackUrl {
+#playback-url {
   position: absolute;
   width: fit-content;
   background: #222222;
@@ -48,17 +48,17 @@ body {
   text-align: center;
 }
 
-#playbackUrl.visible {
+#playback-url.visible {
   opacity: 0.75;
   cursor: pointer;
   pointer-events: all;
 }
 
-#playbackUrl.visible:hover {
+#playback-url.visible:hover {
   opacity: 1;
 }
 
-#playbackUrl:active {
+#playback-url:active {
   background: #444444;
 }
 
