@@ -6,6 +6,28 @@ const { body } = document
 
 const _video = document.getElementById('video') as HTMLVideoElement
 
+const _canvas = document.getElementById('canvas') as HTMLCanvasElement
+
+function resizeCanvas() {
+  const { innerWidth, innerHeight } = window
+
+  _canvas.width = innerWidth
+  _canvas.height = innerHeight
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas()
+})
+
+resizeCanvas()
+
+// @ts-ignore
+const _canvas_stream = _canvas.captureStream()
+
+const _canvas_ctx = _canvas.getContext('2d')
+
+let _stream: MediaStream
+
 const _playback_url = document.getElementById('playback-url')
 _playback_url.onclick = () => {
   copyToClipboard(_playback_url.innerText)
@@ -17,7 +39,9 @@ _record_container.onclick = () => {
   if (_curr_cast) {
     stopRecording()
   } else {
-    startRecording(_stream)
+    if (_stream) {
+      startRecording(_stream)
+    }
   }
 }
 
@@ -41,6 +65,8 @@ let _media_display_returned = false
 
 let _record_frash_dim = false
 
+let _microphone_stream: MediaStream
+
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
 
 // set background to transparent when inside iframe
@@ -57,7 +83,7 @@ console.log('pathname', pathname)
 
 const is_local_or_ip = isLocalOrIp(hostname)
 
-let _stream: MediaStream = null
+let _video_stream: MediaStream = null
 let _curr_cast: CastSession = null
 
 let _playback_id: string = null
@@ -176,11 +202,34 @@ function stopRecording() {
   clearInterval(_record_flash_interval)
 }
 
-function refreshRecording(stream: MediaStream): void {
-  if (_curr_cast) {
-    stopRecording()
-    startRecording(stream)
+async function setMicrophoneStream(): Promise<void> {
+  console.log('setMicrophoneStream')
+  const stream = new MediaStream()
+
+  try {
+    const microphone_stream = await navigator.mediaDevices.getUserMedia({
+      video: false,
+      audio: { echoCancellation: true, noiseSuppression: true },
+    })
+
+    _microphone_stream = microphone_stream
+
+    const microphone_tracks = _microphone_stream.getTracks()
+
+    for (const microphone_track of microphone_tracks) {
+      stream.addTrack(microphone_track)
+    }
+  } catch (err) {
+    console.log('setMicrophoneStream', 'err', err.message)
   }
+
+  const canvas_tracks = _canvas_stream.getTracks()
+
+  for (const canvas_track of canvas_tracks) {
+    stream.addTrack(canvas_track)
+  }
+
+  _stream = stream
 }
 
 async function setMediaToDisplay(): Promise<MediaStream> {
@@ -224,8 +273,7 @@ async function setMediaToDisplay(): Promise<MediaStream> {
 }
 
 async function refreshMediaToDisplay(): Promise<void> {
-  const stream = await setMediaToDisplay()
-  refreshRecording(stream)
+  await setMediaToDisplay()
 }
 
 async function setMediaToUser(): Promise<MediaStream> {
@@ -234,7 +282,7 @@ async function setMediaToUser(): Promise<MediaStream> {
   if (_media_display_returned) {
     // AD HOC
     // stop browser recording
-    _stream.getTracks().forEach((track) => track.stop())
+    _video_stream.getTracks().forEach((track) => track.stop())
   }
 
   _media_display = false
@@ -242,7 +290,7 @@ async function setMediaToUser(): Promise<MediaStream> {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
-      audio: { echoCancellation: true, noiseSuppression: true },
+      audio: false,
     })
 
     setVideoStream(stream)
@@ -257,12 +305,11 @@ async function setMediaToUser(): Promise<MediaStream> {
 }
 
 async function refreshMediaToUser(): Promise<void> {
-  const stream = await setMediaToUser()
-  refreshRecording(stream)
+  await setMediaToUser()
 }
 
 function setVideoStream(stream: MediaStream): void {
-  _stream = stream
+  _video_stream = stream
   _video.srcObject = stream
 }
 
@@ -276,6 +323,36 @@ initStreamData()
 setMediaToUser()
 // setMediaToDisplay()
 
+function setupAnimationFrame() {
+  requestAnimationFrame(() => {
+    const { innerWidth, innerHeight } = window
 
+    const { videoWidth, videoHeight } = _video
 
+    const video_ratio = videoWidth / videoHeight
 
+    let x: number = 0
+    let y: number = 0
+
+    let width: number
+    let height: number
+
+    if (innerWidth > innerHeight) {
+      height = innerHeight
+      width = height * video_ratio
+      x = (innerWidth - width) / 2
+    } else {
+      width = innerWidth
+      height = width / video_ratio
+      y = (innerHeight - height) / 2
+    }
+
+    _canvas_ctx.drawImage(_video, x, y, width, height)
+
+    setupAnimationFrame()
+  })
+}
+
+setupAnimationFrame()
+
+setMicrophoneStream()

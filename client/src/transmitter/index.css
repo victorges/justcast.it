@@ -21,10 +21,18 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  visibility: hidden;
   background: none transparent;
-  /* transform: scaleX(-1); */
-  /* border: 1px solid #dddddd; */
-  /* box-sizing: border-box; */
+}
+
+#canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: none transparent;
+  transform: scaleX(-1);
 }
 
 #playback-url {
