@@ -53,7 +53,7 @@ const _record = document.getElementById('record')
 
 const _media_container = document.getElementById('media-container')
 _media_container.style.display = 'block'
-_media_container.onclick = async () => {
+_media_container.onclick = () => {
   if (_media_display) {
     refreshMediaToUser()
   } else {
@@ -261,7 +261,7 @@ async function setMediaToDisplay(): Promise<MediaStream> {
   const media_tracks = stream.getTracks()
   const first_media_track = media_tracks[0]
   if (first_media_track) {
-    const end_listener = async () => {
+    const end_listener = () => {
       first_media_track.removeEventListener('ended', end_listener)
       refreshMediaToUser()
     }
@@ -280,11 +280,11 @@ async function setMediaToDisplay(): Promise<MediaStream> {
   return stream
 }
 
-async function refreshMediaToDisplay(): Promise<void> {
-  await setMediaToDisplay()
+function refreshMediaToDisplay(): void {
+  setMediaToDisplay()
 }
 
-async function setMediaToUser(): Promise<MediaStream> {
+async function setMediaToUser(): Promise<void> {
   console.log('setMediaToUser')
 
   if (_media_display_returned) {
@@ -309,15 +309,13 @@ async function setMediaToUser(): Promise<MediaStream> {
     clearCanvas()
 
     _canvas.style.transform = 'scaleX(-1)'
-
-    return stream
   } catch (err) {
     console.log('navigator', 'mediaDevices', 'err', err)
   }
 }
 
-async function refreshMediaToUser(): Promise<void> {
-  await setMediaToUser()
+function refreshMediaToUser(): void {
+  setMediaToUser()
 }
 
 function setVideoStream(stream: MediaStream): void {
