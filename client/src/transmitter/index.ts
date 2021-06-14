@@ -15,6 +15,10 @@ function resizeCanvas() {
   _canvas.height = innerHeight
 }
 
+function clearCanvas() {
+  _canvas.width = _canvas.width
+}
+
 window.addEventListener('resize', () => {
   resizeCanvas()
 })
@@ -269,6 +273,8 @@ async function setMediaToDisplay(): Promise<MediaStream> {
   _media_container.style.borderRadius = '30px'
   _media.style.borderRadius = '15px'
 
+  clearCanvas()
+
   return stream
 }
 
@@ -297,6 +303,8 @@ async function setMediaToUser(): Promise<MediaStream> {
 
     _media.style.borderRadius = '3px'
     _media_container.style.borderRadius = '6px'
+
+    clearCanvas()
 
     return stream
   } catch (err) {
