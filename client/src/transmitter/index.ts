@@ -204,8 +204,8 @@ function stopRecording() {
   clearInterval(_record_flash_interval)
 }
 
-async function setMicrophoneStream(): Promise<void> {
-  console.log('setMicrophoneStream')
+async function setupMicrophone(): Promise<void> {
+  console.log('setupMicrophone')
   const stream = new MediaStream()
 
   try {
@@ -361,4 +361,4 @@ function setupAnimationFrame() {
 
 setupAnimationFrame()
 
-setMicrophoneStream()
+setupMicrophone()
