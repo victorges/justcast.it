@@ -1,6 +1,8 @@
 import { copyToClipboard } from '../clipboard'
 import cast from './cast'
 
+type Transport = 'wrtc' | 'ws'
+
 const { body } = document
 
 const _video = document.getElementById('video') as HTMLVideoElement
@@ -72,6 +74,8 @@ let _recordFlashInterval
 
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
 
+const ALL_TRANSPORTS: Transport[] = ['wrtc', 'ws']
+
 // set background to transparent when inside iframe
 if (window.location !== window.parent.location) {
   body.style.background = 'none transparent'
@@ -114,16 +118,13 @@ async function initStreamData() {
   _playbackUrl.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
 
-type Transport = 'wrtc' | 'ws'
-const allTransports: Transport[] = ['wrtc', 'ws']
-
 function requestedTransport() {
   const match = location.search.match(/transport=([^&]+)/)
   if (!match) {
     return null
   }
   const asTransp = match[1] as Transport
-  return allTransports.indexOf(asTransp) >= 0 ? asTransp : null
+  return ALL_TRANSPORTS.indexOf(asTransp) >= 0 ? asTransp : null
 }
 
 function startRecording(stream: MediaStream) {
