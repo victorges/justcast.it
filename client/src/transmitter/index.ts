@@ -2,10 +2,7 @@ import isIp from 'is-ip'
 
 import { copyToClipboard } from '../clipboard'
 import cast from './cast'
-
-const isLocalHost = (hostname) => {
-  return hostname === 'localhost' || hostname.endsWith('.localhost')
-}
+import isLocalHost from './util/isLocalHost'
 
 const { body } = document
 
@@ -43,7 +40,7 @@ console.log('hostname', hostname)
 console.log('port', port)
 console.log('pathname', pathname)
 
-const isLocalOrIp = isLocalHost(hostname) || isIp(hostname)
+const is_local_or_ip = isLocalHost(hostname) || isIp(hostname)
 
 let _stream: MediaStream = null
 let _curr_cast: CastSession = null
@@ -71,7 +68,7 @@ async function initStreamData() {
   _playback_id = humanId
   _stream_key = streamKey
 
-  const portStr = isLocalOrIp ? `:${port}` : ''
+  const portStr = is_local_or_ip ? `:${port}` : ''
   _playback_url.innerText = `${protocol}//${hostname}${portStr}/${humanId}`
 }
 

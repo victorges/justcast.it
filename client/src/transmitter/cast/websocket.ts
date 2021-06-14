@@ -1,12 +1,9 @@
 import isIp from 'is-ip'
-
-const isLocalHost = (hostname) => {
-  return hostname === 'localhost' || hostname.endsWith('.localhost')
-}
+import isLocalHost from '../util/isLocalHost'
 
 const { hostname, port, protocol } = location
 
-const isLocalOrIp = isLocalHost(hostname) || isIp(hostname)
+const is_local_or_ip = isLocalHost(hostname) || isIp(hostname)
 
 const secure = protocol === 'https:'
 
@@ -50,8 +47,8 @@ function querystring(params: Record<string, any>) {
 }
 
 function connect(streamKey: string, ignoreCookies: boolean) {
-  const protocol = !isLocalOrIp && secure ? 'wss' : 'ws'
-  const portStr = isLocalOrIp ? `:${port}` : ''
+  const protocol = !is_local_or_ip && secure ? 'wss' : 'ws'
+  const portStr = is_local_or_ip ? `:${port}` : ''
   const query = querystring({ mimeType, ignoreCookies })
   const url = `${protocol}://${hostname}${portStr}/ingest/ws/${streamKey}${query}`
 
