@@ -275,6 +275,8 @@ async function setMediaToDisplay(): Promise<MediaStream> {
 
   clearCanvas()
 
+  _canvas.style.transform = ''
+
   return stream
 }
 
@@ -305,6 +307,8 @@ async function setMediaToUser(): Promise<MediaStream> {
     _media_container.style.borderRadius = '6px'
 
     clearCanvas()
+
+    _canvas.style.transform = 'scaleX(-1)'
 
     return stream
   } catch (err) {

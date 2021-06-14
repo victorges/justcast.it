@@ -32,7 +32,6 @@ body {
   width: 100%;
   height: 100%;
   background: none transparent;
-  transform: scaleX(-1);
 }
 
 #playback-url {
