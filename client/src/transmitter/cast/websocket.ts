@@ -1,8 +1,4 @@
-import isLocalOrIp from '../util/isLocalOrIp'
-
 const { hostname, port, protocol } = location
-
-const is_local_or_ip = isLocalOrIp(hostname)
 
 const secure = protocol === 'https:'
 
@@ -46,8 +42,8 @@ function querystring(params: Record<string, any>) {
 }
 
 function connect(streamKey: string, ignoreCookies: boolean) {
-  const protocol = !is_local_or_ip && secure ? 'wss' : 'ws'
-  const portStr = is_local_or_ip ? `:${port}` : ''
+  const protocol = secure ? 'wss' : 'ws'
+  const portStr = port ? `:${port}` : ''
   const query = querystring({ mimeType, ignoreCookies })
   const url = `${protocol}://${hostname}${portStr}/ingest/ws/${streamKey}${query}`
 
