@@ -67,6 +67,8 @@ let _record_frash_dim = false
 
 let _microphone_stream: MediaStream
 
+let _record_flash_interval
+
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
 
 // set background to transparent when inside iframe
@@ -131,11 +133,11 @@ function startRecording(stream: MediaStream) {
   }
   console.log('startRecording')
 
-  const _requested_transport = requestedTransport()
+  const requested_transport = requestedTransport()
 
   const is_h264_mime_type = cast.wsMimeType.indexOf('h264') > 0
 
-  const transport = _requested_transport ?? (is_h264_mime_type ? 'ws' : 'wrtc')
+  const transport = requested_transport ?? (is_h264_mime_type ? 'ws' : 'wrtc')
 
   const connect_time = Date.now()
 
@@ -181,8 +183,6 @@ function startRecording(stream: MediaStream) {
     }
   }, 1000)
 }
-
-let _record_flash_interval
 
 function stopRecording() {
   if (!_curr_cast) {
