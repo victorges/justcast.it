@@ -62,14 +62,6 @@ body {
   background: #444444;
 }
 
-.vjs-big-play-button {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  transition: opacity 0.2s linear, color 0.2s linear;
-}
-
 .record-container,
 .media-container {
   display: none;

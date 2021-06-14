@@ -9,7 +9,7 @@ const isLocalHost = (hostname) => {
 
 const { body } = document
 
-const video = document.getElementById('video')
+const video = document.getElementById('video') as HTMLVideoElement
 const playbackUrl = document.getElementById('playbackUrl')
 
 const record_container = document.getElementById('record-container')
@@ -25,9 +25,6 @@ let media_display_returned = false
 playbackUrl.onclick = () => {
   copyToClipboard(playbackUrl.innerText)
 }
-
-// @ts-ignore
-const player = videojs(video)
 
 // set background to transparent when inside iframe
 if (window.location !== window.parent.location) {
@@ -127,7 +124,7 @@ function start_recording(stream: MediaStream) {
   video.style.opacity = '1'
 
   if (_playbackId) playbackUrl.classList.add('visible')
-
+    
   record_flash_interval = setInterval(() => {
     record_frash_dim = !record_frash_dim
 
@@ -245,15 +242,13 @@ async function refresh_media_to_user(): Promise<void> {
 
 function set_video_stream(stream: MediaStream): void {
   _stream = stream
-
-  const video = player.tech().el()
   video.srcObject = stream
 }
 
 video.style.opacity = '0.5'
 video.style.transition = 'opacity 0.2s linear'
 
-player.volume(0)
+video.volume = 0
 
 initStreamData()
 
