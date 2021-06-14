@@ -7,11 +7,32 @@ const { body } = document
 const _video = document.getElementById('video') as HTMLVideoElement
 
 const _playback_url = document.getElementById('playback-url')
+_playback_url.onclick = () => {
+  copyToClipboard(_playback_url.innerText)
+}
 
 const _record_container = document.getElementById('record-container')
+_record_container.style.display = 'block'
+_record_container.onclick = () => {
+  if (_curr_cast) {
+    stopRecording()
+  } else {
+    startRecording(_stream)
+  }
+}
+
 const _record = document.getElementById('record')
 
 const _media_container = document.getElementById('media-container')
+_media_container.style.display = 'block'
+_media_container.onclick = async () => {
+  if (_media_display) {
+    refreshMediaToUser()
+  } else {
+    refreshMediaToDisplay()
+  }
+}
+
 const _media = document.getElementById('media')
 
 let _media_display = false
@@ -21,10 +42,6 @@ let _media_display_returned = false
 let _record_frash_dim = false
 
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
-
-_playback_url.onclick = () => {
-  copyToClipboard(_playback_url.innerText)
-}
 
 // set background to transparent when inside iframe
 if (window.location !== window.parent.location) {
@@ -259,22 +276,6 @@ initStreamData()
 setMediaToUser()
 // setMediaToDisplay()
 
-_record_container.style.display = 'block'
 
-_record_container.onclick = () => {
-  if (_curr_cast) {
-    stopRecording()
-  } else {
-    startRecording(_stream)
-  }
-}
 
-_media_container.style.display = 'block'
 
-_media_container.onclick = async () => {
-  if (_media_display) {
-    refreshMediaToUser()
-  } else {
-    refreshMediaToDisplay()
-  }
-}
