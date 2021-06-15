@@ -21,7 +21,6 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  visibility: hidden;
   background: none transparent;
 }
 
@@ -31,7 +30,7 @@ body {
   left: 50%;
   width: 100%;
   height: 100%;
-  background: none transparent;
+  visibility: hidden;
 }
 
 #playback-url {

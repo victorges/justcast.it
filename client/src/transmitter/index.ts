@@ -3,6 +3,8 @@ import cast from './cast'
 
 type Transport = 'wrtc' | 'ws'
 
+type Callback = () => void
+
 const { body } = document
 
 const _video = document.getElementById('video') as HTMLVideoElement
@@ -72,6 +74,8 @@ let _recordFrashDim = false
 
 let _recordFlashInterval
 
+let _userInteracted: boolean = false
+
 const MIN_RETRY_THRESHOLD = 60 * 1000 // 1 min
 
 const ALL_TRANSPORTS: Transport[] = ['wrtc', 'ws']
@@ -132,6 +136,11 @@ function startRecording(stream: MediaStream) {
     return
   }
   console.log('startRecording')
+
+  if (!_userInteracted) {
+    _userInteracted = true
+    startOscillatorLoop()
+  }
 
   const requestedTransp = requestedTransport()
 
@@ -317,6 +326,63 @@ function setVideoStream(stream: MediaStream): void {
   _video.srcObject = stream
 }
 
+// https://stackoverflow.com/questions/40687010/canvascapturemediastream-mediarecorder-frame-synchronization
+
+function createAudioTimeout(): (
+  callback: Callback,
+  frequency: number
+) => Callback {
+  const audioCtx = new AudioContext()
+
+  const silence = audioCtx.createGain()
+  silence.gain.value = 0
+  silence.connect(audioCtx.destination)
+
+  function audioTimeout(callback: Callback, frequency: number): () => void {
+    const freq = frequency / 1000
+
+    const oscillator = audioCtx.createOscillator()
+    oscillator.onended = () => {
+      oscillator.disconnect()
+      callback()
+    }
+    oscillator.connect(silence)
+    oscillator.start(audioCtx.currentTime)
+    oscillator.stop(audioCtx.currentTime + freq)
+
+    return function () {
+      oscillator.onended = () => {
+        oscillator.disconnect()
+      }
+    }
+  }
+
+  return audioTimeout
+}
+
+function startOscillatorLoop() {
+  const requestOscillatorFrame = createRequestOscillatorFrame()
+
+  function setupOscillatorFrame() {
+    requestOscillatorFrame(() => {
+      onFrame()
+      setupOscillatorFrame()
+    })
+  }
+
+  setupOscillatorFrame()
+}
+
+function createRequestOscillatorFrame(): (callback: Callback) => Callback {
+  const audioTimeout = createAudioTimeout()
+
+  function requestOscillatorFrame(callback): Callback {
+    return audioTimeout(callback, 1000 / 60)
+  }
+
+  return requestOscillatorFrame
+}
+
 _video.style.opacity = '0.5'
 _video.style.transition = 'opacity 0.2s linear'
 
@@ -327,37 +393,31 @@ initStreamData()
 setMediaToUser()
 // setMediaToDisplay()
 
-function setupAnimationFrame() {
-  requestAnimationFrame(() => {
-    const { innerWidth, innerHeight } = window
+function onFrame() {
+  const { innerWidth, innerHeight } = window
 
-    const { videoWidth = 0, videoHeight = 0 } = _video
+  const { videoWidth = 0, videoHeight = 0 } = _video
 
-    if (videoWidth > 0) {
-      let scale: number
+  if (videoWidth > 0) {
+    let scale: number
 
-      if (videoWidth > videoHeight) {
-        scale = innerWidth / videoWidth
-        const canvas_height = Math.min(innerHeight, videoHeight * scale)
-        _canvas.height = canvas_height
-        _canvas.style.height = `${canvas_height}px`
-      } else {
-        scale = innerHeight / videoHeight
-        const canvas_width = Math.min(innerWidth, videoWidth * scale)
-        _canvas.width = canvas_width
-        _canvas.style.width = `${canvas_width}px`
-      }
-
-      const width = videoWidth * scale
-      const height = videoHeight * scale
-
-      _canvasCtx.drawImage(_video, 0, 0, width, height)
+    if (videoWidth > videoHeight) {
+      scale = innerWidth / videoWidth
+      const canvas_height = Math.min(innerHeight, videoHeight * scale)
+      _canvas.height = canvas_height
+      _canvas.style.height = `${canvas_height}px`
+    } else {
+      scale = innerHeight / videoHeight
+      const canvas_width = Math.min(innerWidth, videoWidth * scale)
+      _canvas.width = canvas_width
+      _canvas.style.width = `${canvas_width}px`
     }
 
-    setupAnimationFrame()
-  })
-}
+    _canvasCtx.resetTransform()
+    _canvasCtx.scale(scale, scale)
 
-setupAnimationFrame()
+    _canvasCtx.drawImage(_video, 0, 0, videoWidth, videoHeight)
+  }
+}
 
 setupMicrophone()
