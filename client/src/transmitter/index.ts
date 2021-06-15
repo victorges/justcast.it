@@ -394,30 +394,12 @@ setMediaToUser()
 // setMediaToDisplay()
 
 function onFrame() {
-  const { innerWidth, innerHeight } = window
+  const { videoWidth, videoHeight } = _video
 
-  const { videoWidth = 0, videoHeight = 0 } = _video
+  _canvas.width = videoWidth
+  _canvas.height = videoHeight
 
-  if (videoWidth > 0) {
-    let scale: number
-
-    if (videoWidth > videoHeight) {
-      scale = innerWidth / videoWidth
-      const canvas_height = Math.min(innerHeight, videoHeight * scale)
-      _canvas.height = canvas_height
-      _canvas.style.height = `${canvas_height}px`
-    } else {
-      scale = innerHeight / videoHeight
-      const canvas_width = Math.min(innerWidth, videoWidth * scale)
-      _canvas.width = canvas_width
-      _canvas.style.width = `${canvas_width}px`
-    }
-
-    _canvasCtx.resetTransform()
-    _canvasCtx.scale(scale, scale)
-
-    _canvasCtx.drawImage(_video, 0, 0, videoWidth, videoHeight)
-  }
+  _canvasCtx.drawImage(_video, 0, 0, videoWidth, videoHeight)
 }
 
 setupMicrophone()
