@@ -348,10 +348,10 @@ function setupAnimationFrame() {
         _canvas.style.width = `${canvas_width}px`
       }
 
-      _canvasCtx.resetTransform()
-      _canvasCtx.scale(scale, scale)
+      const width = videoWidth * scale
+      const height = videoHeight * scale
 
-      _canvasCtx.drawImage(_video, 0, 0, videoWidth, videoHeight)
+      _canvasCtx.drawImage(_video, 0, 0, width, height)
     }
 
     setupAnimationFrame()
