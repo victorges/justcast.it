@@ -70,6 +70,8 @@ let _mediaDisplay = false
 
 let _mediaDisplayReturned = false
 
+let _mediaUserReturned = false
+
 let _recordFrashDim = false
 
 let _recordFlashInterval
@@ -245,6 +247,12 @@ async function setMediaToDisplay(): Promise<MediaStream> {
   _mediaDisplay = true
   _mediaDisplayReturned = false
 
+  if (_mediaUserReturned) {
+    _videoStream.getTracks().forEach((track: MediaStreamTrack) => {
+      track.stop()
+    })
+  }
+
   let stream: MediaStream
 
   try {
@@ -297,6 +305,7 @@ async function setMediaToUser(): Promise<void> {
   }
 
   _mediaDisplay = false
+  _mediaUserReturned = false
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -314,7 +323,10 @@ async function setMediaToUser(): Promise<void> {
     _canvas.style.transform = 'translate(-50%, -50%) scaleX(-1)'
   } catch (err) {
     console.log('navigator', 'mediaDevices', 'err', err)
+    return
   }
+
+  _mediaUserReturned = true
 }
 
 function refreshMediaToUser(): void {
