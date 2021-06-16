@@ -22,12 +22,18 @@ body {
   width: 100%;
   height: 100%;
   background: none transparent;
-  /* transform: scaleX(-1); */
-  /* border: 1px solid #dddddd; */
-  /* box-sizing: border-box; */
 }
 
-#playbackUrl {
+#canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+}
+
+#playback-url {
   position: absolute;
   width: fit-content;
   background: #222222;
@@ -48,26 +54,18 @@ body {
   text-align: center;
 }
 
-#playbackUrl.visible {
+#playback-url.visible {
   opacity: 0.75;
   cursor: pointer;
   pointer-events: all;
 }
 
-#playbackUrl.visible:hover {
+#playback-url.visible:hover {
   opacity: 1;
 }
 
-#playbackUrl:active {
+#playback-url:active {
   background: #444444;
-}
-
-.vjs-big-play-button {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  transition: opacity 0.2s linear, color 0.2s linear;
 }
 
 .record-container,

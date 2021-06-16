@@ -7,32 +7,20 @@
 
     <title>Just Cast It</title>
 
-    <base href="/transmitter/">
-
-    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
-    <link
-      href="https://unpkg.com/@silvermine/videojs-quality-selector/dist/css/quality-selector.css"
-      rel="stylesheet"
-    />
+    <base href="/transmitter/" />
 
     <link href="index.css" rel="stylesheet" />
   </head>
   <body>
-    <video
-      id="video"
-      class="video-js vjs-default-skin"
-      autoplay
-      data-setup='{ "controls": false, "autoplay": true, "preload": "auto" }'
-    ></video>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
     <div id="record-container" class="record-container">
       <div id="record" class="record"></div>
     </div>
     <div id="media-container" class="media-container">
       <div id="media" class="media"></div>
     </div>
-    <div id="playbackUrl"></div>
-    <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
-    <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
+    <div id="playback-url"></div>
   </body>
   <script src="bundle.js"></script>
 </html>
