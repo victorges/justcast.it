@@ -1,4 +1,3 @@
-
 import express from 'express'
 
 import streamstore from '../clients/streamstore'
@@ -24,12 +23,9 @@ const cookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000
 
 api.post('/stream/init', async (req, res) => {
   const prevStreamId = req.cookies[streamIdCookieName]
-  const {
-    humanId,
-    streamId,
-    streamKey,
-    streamUrl
-  } = await getOrCreateStream(prevStreamId)
+  const { humanId, streamId, streamKey, streamUrl } = await getOrCreateStream(
+    prevStreamId
+  )
 
   if (!prevStreamId) {
     res.cookie(streamIdCookieName, streamId, {
@@ -40,6 +36,13 @@ api.post('/stream/init', async (req, res) => {
   res.json({
     humanId,
     streamKey: streamKey ?? extractStreamKey(streamUrl),
+  })
+})
+
+api.all('*', (req, res) => {
+  res.status(404).json({
+    code: 'not_found',
+    message: `No API at path ${req.path}`,
   })
 })
 
