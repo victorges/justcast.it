@@ -4,7 +4,7 @@ import express from 'express'
 const files = express.Router()
 
 const CWD = process.cwd()
-const FILE_REGEX = /.+\..+/
+const FILE_REGEX = /^[^:]+\.[^/]+$/
 
 const isFilename = (str: string) => {
   return FILE_REGEX.test(str)
