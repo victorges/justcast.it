@@ -10,7 +10,9 @@ websocket.ws('/ingest/ws/:streamKey', (ws, req) => {
   console.log('wss', 'connection', req.url)
 
   const ignoreCookies = req.query['ignoreCookies'] === 'true'
-  const streamId = ignoreCookies ? null : req.cookies[streamIdCookieName] as string
+  const streamId = ignoreCookies
+    ? null
+    : (req.cookies[streamIdCookieName] as string)
   const streamKey = req.params.streamKey
   const mimeType = req.query['mimeType']?.toString()
 
@@ -21,7 +23,7 @@ websocket.ws('/ingest/ws/:streamKey', (ws, req) => {
 
   const opts: ffmpeg.Opts = {
     logNs: streamId ? `stream-${streamId}` : `streamKey-${streamKey}`,
-    streamUrl: streamUrl(streamKey),
+    streamUrl: streamKey.indexOf('://') > 0 ? streamKey : streamUrl(streamKey),
     mimeType,
   }
   ffmpeg.pipeWsToRtmp(ws, opts)
