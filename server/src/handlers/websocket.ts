@@ -6,14 +6,15 @@ import { streamIdCookieName } from './common'
 
 const websocket = express.Router()
 
-websocket.ws('/ingest/ws/:streamKey', (ws, req) => {
+websocket.ws('/ingest/ws/*', (ws, req) => {
   console.log('wss', 'connection', req.url)
+  console.log(req.params)
 
   const ignoreCookies = req.query['ignoreCookies'] === 'true'
   const streamId = ignoreCookies
     ? null
     : (req.cookies[streamIdCookieName] as string)
-  const streamKey = req.params.streamKey
+  const streamKey = req.params[0]
   const mimeType = req.query['mimeType']?.toString()
 
   if (!streamKey) {
@@ -31,7 +32,7 @@ websocket.ws('/ingest/ws/:streamKey', (ws, req) => {
 
 websocket.ws('*', (ws, req) => {
   console.error('wss', 'connection', req.url)
-  ws.close(1002, 'websocket path is /ingest/ws/:streamKey')
+  ws.close(1002, 'websocket path is /ingest/ws/*streamKey')
 })
 
 export { websocket }
