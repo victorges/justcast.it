@@ -16,10 +16,10 @@ files.get('*', (req, res, next) => {
 })
 
 files.get('*', (req, res) => {
-  const path_segments = req.path.substr(1).split('/', 2)
+  const path_segs = req.path.substr(1)
 
-  const path_first_segment = path_segments[0]
-  const path_last_segment = path_segments[path_segments.length - 1] || ''
+  const path_first_segment = path_segs.split('/', 1)[0]
+  const path_other_segments = path_segs.substr(path_first_segment.length + 1)
 
   let subfolder: string
   if (['', 'transmitter', 'to'].includes(path_first_segment)) {
@@ -29,8 +29,8 @@ files.get('*', (req, res) => {
   }
 
   let file_name: string
-  if (isFilename(path_last_segment)) {
-    file_name = path_last_segment
+  if (isFilename(path_other_segments)) {
+    file_name = path_other_segments
   } else {
     file_name = 'index.html'
   }

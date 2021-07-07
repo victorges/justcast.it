@@ -101,9 +101,10 @@ let _playbackId: string = null
 let _streamKey: string | undefined
 
 async function initStreamData() {
-  const rootSegment = pathname.substr(1).split('/', 1)[0]
+  const pathSegs = pathname.substr(1)
+  const rootSegment = pathSegs.split('/', 1)[0]
   if (rootSegment === 'to') {
-    _streamKey = pathname.substr(rootSegment.length + 1)
+    _streamKey = pathSegs.substr(rootSegment.length + 1)
     _playbackId = undefined
     return
   }
