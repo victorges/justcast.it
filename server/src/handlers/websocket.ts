@@ -8,7 +8,6 @@ const websocket = express.Router()
 
 websocket.ws('/ingest/ws/*', (ws, req) => {
   console.log('wss', 'connection', req.url)
-  console.log(req.params)
 
   const ignoreCookies = req.query['ignoreCookies'] === 'true'
   const streamId = ignoreCookies
