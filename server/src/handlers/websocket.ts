@@ -24,7 +24,7 @@ websocket.ws('/ingest/ws/*', (ws, req) => {
 
   const opts: ffmpeg.Opts = {
     logNs: streamId ? `stream-${streamId}` : `streamKey-${streamKey}`,
-    streamUrl: streamKey.indexOf('://') > 0 ? streamKey : streamUrl(streamKey),
+    streamUrl: streamKey.includes('://') ? streamKey : streamUrl(streamKey),
     mimeType,
   }
   ffmpeg.pipeWsToRtmp(ws, opts)
