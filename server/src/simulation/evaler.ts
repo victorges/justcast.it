@@ -1,4 +1,4 @@
-import Vector from './vector'
+import Var, { State, Vector } from './var'
 
 abstract class Evaler {
   abstract copy(): this
@@ -8,34 +8,40 @@ abstract class Evaler {
   abstract mult(factor: number): this
 }
 
-abstract class BaseEvaler<N extends number> extends Evaler {
-  constructor(readonly state: Vector<N>) {
+abstract class BaseEvaler<
+  N extends number,
+  T extends State = number
+> extends Evaler {
+  constructor(readonly value: Var<Vector<N, T>>) {
     super()
   }
 
   add(other: this): this {
-    this.state.add(other.state)
+    this.value.add(other.value)
     return this
   }
 
   mult(factor: number): this {
-    this.state.mult(factor)
+    this.value.mult(factor)
     return this
   }
 }
 
 class ConstantAcceleration extends BaseEvaler<2> {
-  constructor(readonly acceleration: number, state?: Vector<2>) {
-    super(state ?? new Vector(2, [0, 0]))
+  constructor(readonly acceleration: number, state?: Vector<2, number>) {
+    super(new Var(state ?? [0, 0]))
   }
 
   copy(): this {
-    return new ConstantAcceleration(this.acceleration, this.state) as this
+    const varCopy = this.value.copy()
+    return new ConstantAcceleration(this.acceleration, varCopy.state) as this
   }
 
   derive(time: number): this {
-    this.state[0] = this.state[1]
-    this.state[1] = this.acceleration
+    const {
+      state: [position, velocity],
+    } = this.value
+    this.value.set([velocity, this.acceleration])
     return this
   }
 }

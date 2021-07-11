@@ -122,3 +122,21 @@ function stateMult<T extends State>(dest: T, factor: number): T {
     throw new Error('unknown state type')
   }
 }
+
+type ExtendsState<T> = T extends State ? T : never
+
+export type Vector<N extends number, T extends State = State> = ExtendsState<
+  N extends 0
+    ? []
+    : N extends 1
+    ? [T]
+    : N extends 2
+    ? [T, T]
+    : N extends 3
+    ? [T, T, T]
+    : N extends 4
+    ? [T, T, T, T]
+    : N extends 5
+    ? [T, T, T, T, T]
+    : T[]
+>
