@@ -1,5 +1,5 @@
 export default class Vector<N extends number> extends Array<number> {
-  constructor(size: N, values: number[]) {
+  constructor(size: N, values: NumberArray<N>) {
     super(...values)
     if (values.length != size) {
       throw new Error(`must have ${size} elements`)
@@ -10,7 +10,14 @@ export default class Vector<N extends number> extends Array<number> {
     return new Vector(this.length, this)
   }
 
-  add(other: Vector<N>): this {
+  set(values: ArrayOrVector<N>): this {
+    for (let i = 0; i < this.length; i++) {
+      this[i] = values[i]
+    }
+    return this
+  }
+
+  add(other: ArrayOrVector<N>): this {
     for (let i = 0; i < this.length; i++) {
       this[i] += other[i]
     }
@@ -34,3 +41,19 @@ export default class Vector<N extends number> extends Array<number> {
   unshift = this.unimplemented
   splice = this.unimplemented
 }
+
+type ArrayOrVector<N extends number> = NumberArray<N> | Vector<N>
+
+type NumberArray<N extends number> = N extends 0
+  ? []
+  : N extends 1
+  ? [number]
+  : N extends 2
+  ? [number, number]
+  : N extends 3
+  ? [number, number, number]
+  : N extends 4
+  ? [number, number, number, number]
+  : N extends 5
+  ? [number, number, number, number, number]
+  : number[]
