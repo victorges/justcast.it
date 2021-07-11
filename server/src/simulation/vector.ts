@@ -1,32 +1,51 @@
-export default class Vector<N extends number> extends Array<number> {
-  constructor(size: N, values: NumberArray<N>) {
+import { Point } from './point'
+
+export type VectorElm = number | Vector<number, VectorElm> | Point
+
+export default class Vector<
+  N extends number,
+  T extends VectorElm = number
+> extends Array<T> {
+  constructor(size: N, values: SizedArray<N, T>) {
     super(...values)
     if (values.length != size) {
       throw new Error(`must have ${size} elements`)
     }
   }
 
-  copy(): Vector<N> {
+  copy(): Vector<N, T> {
     return new Vector(this.length, this)
   }
 
-  set(values: ArrayOrVector<N>): this {
+  set(values: ArrayOrVector<N, T>): this {
     for (let i = 0; i < this.length; i++) {
       this[i] = values[i]
     }
     return this
   }
 
-  add(other: ArrayOrVector<N>): this {
+  add(other: ArrayOrVector<N, T>): this {
     for (let i = 0; i < this.length; i++) {
-      this[i] += other[i]
+      const elm = this[i]
+      if (typeof elm === 'number') {
+        const otherElm = other[i] as number
+        this[i] = (elm + otherElm) as T
+      } else {
+        const otherElm = other[i] as Point & Vector<number, T>
+        elm.add(otherElm)
+      }
     }
     return this
   }
 
   mult(factor: number): this {
     for (let i = 0; i < this.length; i++) {
-      this[i] *= factor
+      const elm = this[i]
+      if (typeof elm === 'number') {
+        this[i] = (elm * factor) as T
+      } else {
+        elm.mult(factor)
+      }
     }
     return this
   }
@@ -42,18 +61,20 @@ export default class Vector<N extends number> extends Array<number> {
   splice = this.unimplemented
 }
 
-type ArrayOrVector<N extends number> = NumberArray<N> | Vector<N>
+type ArrayOrVector<N extends number, T extends VectorElm> =
+  | SizedArray<N, T>
+  | Vector<N, T>
 
-type NumberArray<N extends number> = N extends 0
+type SizedArray<N extends number, T> = N extends 0
   ? []
   : N extends 1
-  ? [number]
+  ? [T]
   : N extends 2
-  ? [number, number]
+  ? [T, T]
   : N extends 3
-  ? [number, number, number]
+  ? [T, T, T]
   : N extends 4
-  ? [number, number, number, number]
+  ? [T, T, T, T]
   : N extends 5
-  ? [number, number, number, number, number]
-  : number[]
+  ? [T, T, T, T, T]
+  : T[]
