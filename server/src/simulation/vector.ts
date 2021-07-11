@@ -1,6 +1,6 @@
-import { Point } from './point'
+import Var from './var'
 
-export type VectorElm = number | Vector<number, VectorElm> | Point
+export type VectorElm = number | Vector<number, VectorElm> | Var
 
 export default class Vector<
   N extends number,
@@ -31,7 +31,7 @@ export default class Vector<
         const otherElm = other[i] as number
         this[i] = (elm + otherElm) as T
       } else {
-        const otherElm = other[i] as Point & Vector<number, T>
+        const otherElm = other[i] as Var & Vector<number, T>
         elm.add(otherElm)
       }
     }
