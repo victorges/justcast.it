@@ -1,19 +1,16 @@
-import { makeRecord, NumberFields, NumberRecord } from './numRec'
+import Vector from './vector'
 
 abstract class Var {
   abstract copy(): this
   // These should make changes in-place
-  abstract eval(time: number): this
+  abstract derive(time: number): this
   abstract add(other: this): this
   abstract mult(factor: number): this
 }
 
-abstract class BaseVar<T extends string> extends Var {
-  readonly state: NumberRecord<T>
-
-  constructor(state: NumberFields<T>) {
+abstract class BaseVar<N extends number> extends Var {
+  constructor(readonly state: Vector<N>) {
     super()
-    this.state = makeRecord(state)
   }
 
   add(other: this): this {
@@ -25,28 +22,20 @@ abstract class BaseVar<T extends string> extends Var {
     this.state.mult(factor)
     return this
   }
-
-  abstract copy(): this
-  abstract eval(time: number): this
 }
 
-type VelAcc = NumberFields<'velocity' | 'acceleration'>
-
-class ConstantAcceleration extends BaseVar<keyof VelAcc> {
-  readonly acceleration: number
-
-  constructor(acceleration: number, state?: VelAcc) {
-    super(state ?? { velocity: 0, acceleration })
-    this.acceleration = acceleration
+class ConstantAcceleration extends BaseVar<2> {
+  constructor(readonly acceleration: number, state?: Vector<2>) {
+    super(state ?? new Vector(2, [0, 0]))
   }
 
   copy(): this {
     return new ConstantAcceleration(this.acceleration, this.state) as this
   }
 
-  eval(time: number): this {
-    this.state.velocity = this.state.acceleration
-    this.state.acceleration = this.acceleration
+  derive(time: number): this {
+    this.state[0] = this.state[1]
+    this.state[1] = this.acceleration
     return this
   }
 }
