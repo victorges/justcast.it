@@ -1,47 +1,40 @@
-import Var, { State, Vector } from './var'
+import Var, { State, stateSet, Vector } from './var'
 
-abstract class Evaler {
-  abstract copy(): this
-  // These should make changes in-place
-  abstract derive(time: number): this
-  abstract add(other: this): this
-  abstract mult(factor: number): this
+interface Simulator {
+  step(time: number, dt: number, rkIdx: number): void
 }
 
-abstract class BaseEvaler<
-  N extends number,
-  T extends State = number
-> extends Evaler {
+abstract class BaseSimulator<N extends number, T extends State = number>
+  implements Simulator
+{
+  public derivatives: Var<Vector<N, T>>
+
   constructor(readonly value: Var<Vector<N, T>>) {
-    super()
+    this.derivatives = this.value.copy().mult(0)
   }
 
-  add(other: this): this {
-    this.value.add(other.value)
+  step(time: number, dt: number, rkIdx: number) {}
+
+  derive(time: number): this {
+    const length = this.value.state.length
+    for (let i = 1; i < length; i++) {
+      stateSet(this.derivatives.state[i - 1], this.value.state[i])
+    }
+    const lastDrv = this.lastDerivative(time, this.value.state)
+    this.derivatives.state[length - 1] = lastDrv
     return this
   }
 
-  mult(factor: number): this {
-    this.value.mult(factor)
-    return this
-  }
+  abstract lastDerivative(time: number, state: Vector<N, T>): T
 }
 
-class ConstantAcceleration extends BaseEvaler<2> {
+class ConstantAcceleration extends BaseSimulator<2> {
   constructor(readonly acceleration: number, state?: Vector<2, number>) {
     super(new Var(state ?? [0, 0]))
   }
 
-  copy(): this {
-    const varCopy = this.value.copy()
-    return new ConstantAcceleration(this.acceleration, varCopy.state) as this
-  }
-
-  derive(time: number): this {
-    const {
-      state: [position, velocity],
-    } = this.value
-    this.value.set([velocity, this.acceleration])
-    return this
+  lastDerivative(): number {
+    const f = this.value.get('0')
+    return this.acceleration
   }
 }

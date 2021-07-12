@@ -8,18 +8,41 @@ export default class Var<S extends State = State> {
   // All operators below returns `this` for chaining, but everything is done
   // inline on the current state. Also sets this.state only in case it is a number.
 
+  get<T extends any[], R = PropPath<S, T>>(...keyPath: T): R {
+    return stateProp(this.state, ...keyPath)
+  }
+
   set(other: VarOrState<S>): Var<S> {
-    this.state = stateSet(this.state, extractState(other))
-    return this
+    return this.binOp(other, (_, b) => b)
   }
 
   add(other: VarOrState<S>): Var<S> {
-    this.state = stateAdd(this.state, extractState(other))
+    return this.binOp(other, (a, b) => a + b)
+  }
+
+  sub(other: VarOrState<S>): Var<S> {
+    return this.binOp(other, (a, b) => a - b)
+  }
+
+  mult(other: VarOrState<S>): Var<S> {
+    return this.binOp(other, (a, b) => a * b)
+  }
+
+  div(other: VarOrState<S>): Var<S> {
+    return this.binOp(other, (a, b) => a / b)
+  }
+
+  scale(factor: number): Var<S> {
+    this.state = stateScale(this.state, factor)
     return this
   }
 
-  mult(factor: number): Var<S> {
-    this.state = stateMult(this.state, factor)
+  zero(): Var<S> {
+    return this.scale(0)
+  }
+
+  private binOp(other: VarOrState<S>, op: BinaryOp): Var<S> {
+    this.state = stateBinOp(this.state, extractState(other), op)
     return this
   }
 }
@@ -38,7 +61,13 @@ type Item<T> = T extends Array<infer I> ? I : T
 type First<T extends unknown[]> = T extends [infer L, ...any] ? L : Item<T>
 type Shift<T extends unknown[]> = T extends [any, ...infer R] ? R : Item<T>[]
 
-export type StateRecord<K extends string[]> = {
+type Prop<T, K> = K extends keyof T ? T[K] : never
+
+type PropPath<T, KP extends any[]> = KP extends []
+  ? T
+  : PropPath<Prop<T, First<KP>>, Shift<KP>>
+
+export type StateRecord<K extends string[] = string[]> = {
   [P in First<K>]: State<Shift<K>>
 }
 
@@ -52,7 +81,7 @@ const isArray = (st: State): st is State[] => Array.isArray(st)
 const isRecord = (st: State): st is StateRecord<string[]> =>
   typeof st === 'object' && !Array.isArray(st)
 
-function stateCopy<T extends State>(st: T): T {
+export function stateCopy<T extends State>(st: T): T {
   if (isNumber(st)) {
     return st
   } else if (isArray(st)) {
@@ -66,18 +95,39 @@ function stateCopy<T extends State>(st: T): T {
   }
 }
 
-function stateSet<T extends State>(dest: T, other: T): T {
+export function stateProp<
+  T extends State,
+  KP extends any[],
+  R = PropPath<T, KP>
+>(st: T, ...keyPath: KP): R {
+  let val: any = st
+  for (const key of keyPath) {
+    if (!(key in val)) {
+      return undefined as never
+    }
+    val = val[key]
+  }
+  return val
+}
+
+type BinaryOp = (a: number, b: number) => number
+
+export function stateBinOp<T extends State>(
+  dest: T,
+  other: T,
+  op: BinaryOp
+): T {
   if (isNumber(dest) && isNumber(other)) {
-    return other
+    return op(dest, other) as T
   } else if (isArray(dest) && isArray(other)) {
     for (let i = 0; i < dest.length; i++) {
-      dest[i] = stateSet(dest[i], other[i])
+      dest[i] = stateBinOp(dest[i], other[i], op)
     }
     return dest
   } else if (isRecord(dest) && isRecord(other)) {
     const keys = Object.keys(dest) as (keyof T)[]
     for (const key of keys) {
-      dest[key] = stateSet(dest[key], other[key])
+      dest[key] = stateBinOp(dest[key], other[key], op)
     }
     return dest
   } else {
@@ -85,37 +135,18 @@ function stateSet<T extends State>(dest: T, other: T): T {
   }
 }
 
-function stateAdd<T extends State>(dest: T, other: T): T {
-  if (isNumber(dest) && isNumber(other)) {
-    return (dest + other) as T
-  } else if (isArray(dest) && isArray(other)) {
-    for (let i = 0; i < dest.length; i++) {
-      dest[i] = stateAdd(dest[i], other[i])
-    }
-    return dest
-  } else if (isRecord(dest) && isRecord(other)) {
-    const keys = Object.keys(dest) as (keyof T)[]
-    for (const key of keys) {
-      dest[key] = stateAdd(dest[key], other[key])
-    }
-    return dest
-  } else {
-    throw new Error('unknown or mismatching state types')
-  }
-}
-
-function stateMult<T extends State>(dest: T, factor: number): T {
+export function stateScale<T extends State>(dest: T, factor: number): T {
   if (isNumber(dest)) {
     return (dest * factor) as T
   } else if (isArray(dest)) {
     for (let i = 0; i < dest.length; i++) {
-      dest[i] = stateMult(dest[i], factor)
+      dest[i] = stateScale(dest[i], factor)
     }
     return dest
   } else if (isRecord(dest)) {
     const keys = Object.keys(dest) as (keyof T)[]
     for (const key of keys) {
-      dest[key] = stateMult(dest[key], factor)
+      dest[key] = stateScale(dest[key], factor)
     }
     return dest
   } else {
