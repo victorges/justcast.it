@@ -8,29 +8,15 @@ export default class Var<S extends State = State> {
   // All operators below returns `this` for chaining, but everything is done
   // inline on the current state. Also sets this.state only in case it is a number.
 
-  get<T extends any[], R = PropPath<S, T>>(...keyPath: T): R {
-    return stateProp(this.state, ...keyPath)
+  get<KP extends ObjKey[]>(keyPath: KP): PropPath<S, KP> {
+    return stateProp(this.state, keyPath)
   }
 
-  set(other: VarOrState<S>): Var<S> {
-    return this.binOp(other, (_, b) => b)
-  }
-
-  add(other: VarOrState<S>): Var<S> {
-    return this.binOp(other, (a, b) => a + b)
-  }
-
-  sub(other: VarOrState<S>): Var<S> {
-    return this.binOp(other, (a, b) => a - b)
-  }
-
-  mult(other: VarOrState<S>): Var<S> {
-    return this.binOp(other, (a, b) => a * b)
-  }
-
-  div(other: VarOrState<S>): Var<S> {
-    return this.binOp(other, (a, b) => a / b)
-  }
+  set = Var.makeBinOp(this, (_, b) => b)
+  add = Var.makeBinOp(this, (a, b) => a + b)
+  sub = Var.makeBinOp(this, (a, b) => a - b)
+  mult = Var.makeBinOp(this, (a, b) => a * b)
+  div = Var.makeBinOp(this, (a, b) => a / b)
 
   scale(factor: number): Var<S> {
     this.state = stateScale(this.state, factor)
@@ -41,35 +27,62 @@ export default class Var<S extends State = State> {
     return this.scale(0)
   }
 
-  private binOp(other: VarOrState<S>, op: BinaryOp): Var<S> {
-    this.state = stateBinOp(this.state, extractState(other), op)
+  static makeBinOp<S extends State>(inst: Var<S>, op: BinaryOp) {
+    function opFunc(other: S | Var<S>): Var<S>
+    function opFunc<KP extends ObjKey[]>(
+      keyPath: KP,
+      other: PropPath<S, KP>
+    ): Var<S>
+    function opFunc<KP extends ObjKey[]>(
+      this: Var<S>,
+      pathOrOther: KP | S | Var<S>,
+      otherProp?: PropPath<S, KP>
+    ): Var<S> {
+      return this.propBinOp(pathOrOther, otherProp, op)
+    }
+    return opFunc.bind(inst)
+  }
+
+  private propBinOp<KP extends ObjKey[]>(
+    pathOrOther: KP | S | Var<S>,
+    otherProp: PropPath<S, KP> | undefined,
+    op: BinaryOp
+  ): this {
+    let path: KP
+    let other: PropPath<S, KP>
+    if (otherProp !== undefined) {
+      path = pathOrOther as KP
+      other = otherProp
+    } else {
+      path = [] as any
+      other = (
+        pathOrOther instanceof Var ? pathOrOther.state : pathOrOther
+      ) as PropPath<S, KP>
+    }
+    this.state = statePropBinOp(this.state, path, other, op)
     return this
   }
 }
 
-type VarOrState<S extends State> = Var<S> | S
-
-function extractState<S extends State>(vos: VarOrState<S>): S {
-  if (isNumber(vos)) {
-    return vos as S
-  }
-  const nnvos = vos as Exclude<typeof vos, number>
-  return ('state' in nnvos ? nnvos.state : vos) as S
-}
-
 type Item<T> = T extends Array<infer I> ? I : T
 type First<T extends unknown[]> = T extends [infer L, ...any] ? L : Item<T>
-type Shift<T extends unknown[]> = T extends [any, ...infer R] ? R : Item<T>[]
+type Shift<T extends unknown[]> = T extends [any, ...infer R] ? R : T
 
-type Prop<T, K> = K extends keyof T ? T[K] : never
+type Prop<T, K extends ObjKey> = K extends keyof T ? T[K] : T[K & keyof T]
 
-type PropPath<T, KP extends any[]> = KP extends []
+type PropPath<T, KP extends ObjKey[]> = KP extends never[]
+  ? T
+  : Prop<T, First<KP>> extends T // stop at recursive types
   ? T
   : PropPath<Prop<T, First<KP>>, Shift<KP>>
 
-export type StateRecord<K extends string[] = string[]> = {
-  [P in First<K>]: State<Shift<K>>
-}
+type ObjKey = keyof any
+
+export type StateRecord<K extends string[] = string[]> = K extends never[]
+  ? never
+  : {
+      [P in First<K>]: State<Shift<K>>
+    }
 
 export type State<K extends string[] = string[]> =
   | number
@@ -95,11 +108,10 @@ export function stateCopy<T extends State>(st: T): T {
   }
 }
 
-export function stateProp<
-  T extends State,
-  KP extends any[],
-  R = PropPath<T, KP>
->(st: T, ...keyPath: KP): R {
+export function stateProp<T extends State, KP extends ObjKey[]>(
+  st: T,
+  keyPath: KP
+): PropPath<T, KP> {
   let val: any = st
   for (const key of keyPath) {
     if (!(key in val)) {
@@ -108,6 +120,31 @@ export function stateProp<
     val = val[key]
   }
   return val
+}
+
+export function statePropBinOp<T extends State, KP extends ObjKey[]>(
+  st: T,
+  keyPath: KP,
+  newVal: PropPath<T, KP>,
+  op: BinaryOp
+): T {
+  if (keyPath.length === 0) {
+    return stateBinOp(st, newVal as PropPath<T, []>, op)
+  }
+  let val: any = st
+  const last = keyPath.length - 1
+  for (let i = 0; i <= last; i++) {
+    const key = keyPath[i]
+    if (typeof val === 'number' || !(key in val)) {
+      throw new Error(`key ${key.toString()} not found in ${val}`)
+    }
+    if (i < last) {
+      val = val[key]
+    } else {
+      val = val[key] = stateBinOp(val[key], newVal, op)
+    }
+  }
+  return st
 }
 
 type BinaryOp = (a: number, b: number) => number
