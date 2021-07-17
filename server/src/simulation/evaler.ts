@@ -1,4 +1,5 @@
 import Var, { State, Vector } from './var'
+import './types'
 
 interface Simulator {
   step(time: number, dt: number, rkIdx: number): void
@@ -20,12 +21,12 @@ abstract class BaseSimulator<N extends number, T extends State = number>
     for (let i = 1; i < length; i++) {
       this.derivatives.set([i - 1], this.value.get([i]))
     }
-    const lastDrv = this.lastDerivative(time, this.value.state)
-    this.derivatives.state[length - 1] = lastDrv
+    const lastDrv = this.lastDerivative(time, this.value)
+    this.derivatives.set([length - 1], lastDrv as any)
     return this
   }
 
-  abstract lastDerivative(time: number, state: Vector<N, T>): T
+  abstract lastDerivative(time: number, state: Var<Vector<N, T>>): T
 }
 
 class ConstantAcceleration extends BaseSimulator<2> {
@@ -33,15 +34,24 @@ class ConstantAcceleration extends BaseSimulator<2> {
     super(new Var(state ?? [0, 0]))
   }
 
-  lastDerivative(): number {
-    const f = this.value.get(['0'])
+  lastDerivative(time: number, state: Var<Vector<2>>): number {
     return this.acceleration
   }
 }
 
-// const varr = new Var({ arr: [1, 2, 3], obj: { a: 1 } })
-// varr.add(varr.state)
-// console.log(varr)
-// // console.log(varr.get([1]))
-// // varr.sub(['obj'], { a: 2 })
-// console.log(varr)
+function testArr(data: Vector): void {
+  const arrr: Var<Vector> = new Var(data)
+  arrr.set([1] as const, 4)
+  let prop: Prop<typeof data, 1>
+  prop = 3
+  console.log(arrr, prop)
+}
+
+testArr([1, 2, 3, 4])
+
+const varr = new Var({ arr: [1, 2, 3], obj: { a: 1 } })
+varr.add(varr.state)
+console.log(varr)
+console.log(varr.get([1]))
+varr.sub(['obj'] as const, { a: 2 })
+console.log(varr)

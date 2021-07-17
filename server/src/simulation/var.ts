@@ -1,3 +1,5 @@
+import './types'
+
 export default class Var<S extends State = State> {
   constructor(public state: S) {}
 
@@ -8,15 +10,15 @@ export default class Var<S extends State = State> {
   // All operators below returns `this` for chaining, but everything is done
   // inline on the current state. Also sets this.state only in case it is a number.
 
-  get<KP extends ObjKey[]>(keyPath: KP): PropPath<S, KP> {
-    return stateProp(this.state, keyPath)
-  }
-
-  set = Var.makeBinOp(this, (_, b) => b)
   add = Var.makeBinOp(this, (a, b) => a + b)
   sub = Var.makeBinOp(this, (a, b) => a - b)
   mult = Var.makeBinOp(this, (a, b) => a * b)
   div = Var.makeBinOp(this, (a, b) => a / b)
+
+  get<KP extends ObjKey[]>(keyPath: KP): PropPath<S, KP> {
+    return stateProp(this.state, keyPath)
+  }
+  set = Var.makeBinOp(this, (_, b) => b)
 
   scale(factor: number): Var<S> {
     this.state = stateScale(this.state, factor)
@@ -29,11 +31,11 @@ export default class Var<S extends State = State> {
 
   static makeBinOp<S extends State>(inst: Var<S>, op: BinaryOp) {
     function opFunc(other: S | Var<S>): Var<S>
-    function opFunc<KP extends ObjKey[]>(
+    function opFunc<KP extends ObjKeyPath>(
       keyPath: KP,
       other: PropPath<S, KP>
     ): Var<S>
-    function opFunc<KP extends ObjKey[]>(
+    function opFunc<KP extends ObjKeyPath>(
       this: Var<S>,
       pathOrOther: KP | S | Var<S>,
       otherProp?: PropPath<S, KP>
@@ -43,7 +45,7 @@ export default class Var<S extends State = State> {
     return opFunc.bind(inst)
   }
 
-  private propBinOp<KP extends ObjKey[]>(
+  private propBinOp<KP extends ObjKeyPath>(
     pathOrOther: KP | S | Var<S>,
     otherProp: PropPath<S, KP> | undefined,
     op: BinaryOp
@@ -63,20 +65,6 @@ export default class Var<S extends State = State> {
     return this
   }
 }
-
-type Item<T> = T extends Array<infer I> ? I : T
-type First<T extends unknown[]> = T extends [infer L, ...any] ? L : Item<T>
-type Shift<T extends unknown[]> = T extends [any, ...infer R] ? R : T
-
-type Prop<T, K extends ObjKey> = K extends keyof T ? T[K] : T[K & keyof T]
-
-type PropPath<T, KP extends ObjKey[], TypeStack = never> = KP extends never[]
-  ? T
-  : T extends TypeStack // stop at recursive types
-  ? T
-  : PropPath<Prop<T, First<KP>>, Shift<KP>, TypeStack | T>
-
-type ObjKey = keyof any
 
 export type StateRecord<K extends string[] = string[]> = K extends never[]
   ? never
@@ -122,7 +110,7 @@ export function stateProp<T extends State, KP extends ObjKey[]>(
   return val
 }
 
-export function statePropBinOp<T extends State, KP extends ObjKey[]>(
+export function statePropBinOp<T extends State, KP extends ObjKeyPath>(
   st: T,
   keyPath: KP,
   newVal: PropPath<T, KP>,
@@ -191,20 +179,19 @@ export function stateScale<T extends State>(dest: T, factor: number): T {
   }
 }
 
-type ExtendsState<T> = T extends State ? T : never
-
-export type Vector<N extends number, T extends State = State> = ExtendsState<
-  N extends 0
-    ? []
-    : N extends 1
-    ? [T]
-    : N extends 2
-    ? [T, T]
-    : N extends 3
-    ? [T, T, T]
-    : N extends 4
-    ? [T, T, T, T]
-    : N extends 5
-    ? [T, T, T, T, T]
-    : T[]
->
+export type Vector<
+  N extends number = number,
+  T extends State = number
+> = N extends 0
+  ? []
+  : N extends 1
+  ? [T]
+  : N extends 2
+  ? [T, T]
+  : N extends 3
+  ? [T, T, T]
+  : N extends 4
+  ? [T, T, T, T]
+  : N extends 5
+  ? [T, T, T, T, T]
+  : T[]
