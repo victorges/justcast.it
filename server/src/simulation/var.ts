@@ -70,11 +70,11 @@ type Shift<T extends unknown[]> = T extends [any, ...infer R] ? R : T
 
 type Prop<T, K extends ObjKey> = K extends keyof T ? T[K] : T[K & keyof T]
 
-type PropPath<T, KP extends ObjKey[]> = KP extends never[]
+type PropPath<T, KP extends ObjKey[], TypeStack = never> = KP extends never[]
   ? T
-  : Prop<T, First<KP>> extends T // stop at recursive types
+  : T extends TypeStack // stop at recursive types
   ? T
-  : PropPath<Prop<T, First<KP>>, Shift<KP>>
+  : PropPath<Prop<T, First<KP>>, Shift<KP>, TypeStack | T>
 
 type ObjKey = keyof any
 
