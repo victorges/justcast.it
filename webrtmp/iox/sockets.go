@@ -13,13 +13,13 @@ import (
 
 var socketIdCounter int64 = 0
 
-func newSocketPath() string {
+func newPipePath() string {
 	id := atomic.AddInt64(&socketIdCounter, 1)
-	return fmt.Sprintf("/tmp/webrtmp-%d.sock", id)
+	return fmt.Sprintf("/tmp/webrtmp-%d.pipe", id)
 }
 
 func NewSocketWriter(ctx context.Context) (w io.WriteCloser, path string, err error) {
-	path = newSocketPath()
+	path = newPipePath()
 	err = os.RemoveAll(path)
 	if err != nil {
 		return nil, "", fmt.Errorf("error removing previous pipe: %w", err)
