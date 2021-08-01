@@ -39,7 +39,7 @@ func delayedCtx(ctx context.Context, delay time.Duration) context.Context {
 func Run(ctx context.Context, opts Opts) error {
 	var args []string
 	for _, in := range opts.Input {
-		args = append(args, "-i", in)
+		args = append(args, in)
 	}
 	if strings.EqualFold(opts.InVideoMimeType, webrtc.MimeTypeH264) {
 		args = append(args, videoCopyArgs...)

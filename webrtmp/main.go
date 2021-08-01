@@ -137,6 +137,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 		var lazyDest func() media.Writer
 
 		codec := track.Codec()
+		trackOpts := ffmpeg.Opts{}
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
 			glog.Infoln("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
 			oggDest, oggPath, err := iox.NewSocketWriter(ctx)
@@ -144,15 +145,17 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 				panic(err)
 			}
 			socketPath, lazyDest = oggPath, func() media.Writer { return getOggFile(oggDest) }
+			trackOpts.Input = append(trackOpts.Input, "-c:a", "libopus", "-i", socketPath)
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeH264) {
 			glog.Infoln("Got H.264 track, saving to disk as output.h264")
 			h264File, h264path := getH264File(ctx)
 			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
 
-			ffmpegOpts = append(ffmpegOpts, ffmpeg.Opts{InVideoMimeType: codec.MimeType})
+			trackOpts.InVideoMimeType = codec.MimeType
+			trackOpts.Input = append(trackOpts.Input, "-i", socketPath)
 		}
 		glog.Infof("Sending %s through file %s", codec.MimeType, socketPath)
-		ffmpegOpts = append(ffmpegOpts, ffmpeg.Opts{Input: []string{socketPath}})
+		ffmpegOpts = append(ffmpegOpts, trackOpts)
 		tracksLeft--
 		if tracksLeft == 0 {
 			go runFfmpeg(&tracskWg, ffmpegOpts)
