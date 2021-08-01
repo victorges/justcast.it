@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
-	"net"
 	"os"
 	"sync/atomic"
-	"time"
+	"syscall"
+
+	"github.com/golang/glog"
 )
 
 var socketIdCounter int64 = 0
@@ -20,51 +20,24 @@ func newSocketPath() string {
 
 func NewSocketWriter(ctx context.Context) (w io.WriteCloser, path string, err error) {
 	path = newSocketPath()
-
-	if err := os.RemoveAll(path); err != nil {
-		return nil, "", fmt.Errorf("error deleting existing socket: %w", err)
-	}
-
-	l, err := net.Listen("unix", path)
+	err = os.Remove(path)
 	if err != nil {
-		return nil, "", fmt.Errorf("error opening server on socket: %w", err)
+		return nil, "", fmt.Errorf("error removing previous pipe: %w", err)
 	}
-
-	pipeRead, pipeWrite := io.Pipe()
+	err = syscall.Mkfifo(path, 0666)
+	if err != nil {
+		return nil, "", fmt.Errorf("error creating pipe: %w", err)
+	}
+	w, err = os.OpenFile(path, os.O_RDWR, os.ModeNamedPipe)
+	if err != nil {
+		return nil, "", fmt.Errorf("error opening write end: %w", err)
+	}
 	go func() {
-		defer l.Close()
-		var err error
-		defer func() { pipeRead.CloseWithError(err) }()
-
-		// We only support 1 reader
-		conn, err := l.Accept()
-		if err != nil {
-			log.Fatal("accept error:", err)
+		<-ctx.Done()
+		writeErr := w.Close()
+		if writeErr != nil {
+			glog.Errorf("Error closing pipe. readErr=%q, writeErr=%q", writeErr, writeErr)
 		}
-		defer conn.Close()
-
-		buf := make([]byte, 32*1024)
-		n, bytes := 0, 0
-		for ctx.Err() == nil {
-			n, err = pipeRead.Read(buf)
-			if err == io.EOF || ctx.Err() != nil {
-				err = nil
-				break
-			} else if err != nil {
-				log.Printf("Error reading pipe: %v\n", err)
-				break
-			}
-
-			conn.SetDeadline(time.Now().Add(5 * time.Second))
-			n, err = conn.Write(buf[:n])
-			if err != nil {
-				log.Printf("Error writing to unix socket: %v\n", err)
-				break
-			}
-			bytes += n
-		}
-		mib := float64(bytes) / 1024 / 1024
-		log.Printf("Piped %.1fMiB bytes through socket\n", mib)
 	}()
-	return pipeWrite, path, nil
+	return w, path, nil
 }

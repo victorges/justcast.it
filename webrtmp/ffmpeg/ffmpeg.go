@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/pion/webrtc/v3"
 )
 
@@ -47,6 +48,7 @@ func Run(ctx context.Context, opts Opts) error {
 	}
 	args = append(args, opts.Output)
 
+	glog.Infof("Starting ffmpeg: ffmpeg %s", strings.Join(args, " "))
 	cmd := exec.CommandContext(delayedCtx(ctx, 20*time.Second), "ffmpeg", args...)
 	go func() {
 		<-ctx.Done()
