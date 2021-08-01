@@ -20,7 +20,7 @@ func newSocketPath() string {
 
 func NewSocketWriter(ctx context.Context) (w io.WriteCloser, path string, err error) {
 	path = newSocketPath()
-	err = os.Remove(path)
+	err = os.RemoveAll(path)
 	if err != nil {
 		return nil, "", fmt.Errorf("error removing previous pipe: %w", err)
 	}
