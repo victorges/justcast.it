@@ -150,9 +150,9 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
 
 			ffmpegOpts = append(ffmpegOpts, ffmpeg.Opts{InVideoMimeType: codec.MimeType})
-			glog.Infof("Sending %s through file %s", codec.MimeType, socketPath)
-			ffmpegOpts = append(ffmpegOpts, ffmpeg.Opts{Input: []string{socketPath}})
 		}
+		glog.Infof("Sending %s through file %s", codec.MimeType, socketPath)
+		ffmpegOpts = append(ffmpegOpts, ffmpeg.Opts{Input: []string{socketPath}})
 		tracksLeft--
 		if tracksLeft == 0 {
 			go runFfmpeg(&tracskWg, ffmpegOpts)
