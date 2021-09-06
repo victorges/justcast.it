@@ -11,7 +11,11 @@ export interface StreamInfo {
   stream?: Stream
 }
 
-const firestore = new Firestore()
+const credentials = JSON.parse(process.env.GCLOUD_CREDENTIALS || 'null')
+const firestore = new Firestore({
+  projectId: credentials?.project_id,
+  credentials,
+})
 const collectionRef = firestore.collection('justcast-streams')
 
 async function getByHumanId(humanId: string) {
@@ -34,5 +38,5 @@ async function create(info: StreamInfo) {
 export default {
   getByHumanId,
   getByStreamId,
-  create
+  create,
 }
