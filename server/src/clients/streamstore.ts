@@ -11,7 +11,7 @@ export interface StreamInfo {
   stream?: Stream
 }
 
-const firestore = new Firestore()
+const firestore = new Firestore({})
 const collectionRef = firestore.collection('justcast-streams')
 
 async function getByHumanId(humanId: string) {
@@ -34,5 +34,5 @@ async function create(info: StreamInfo) {
 export default {
   getByHumanId,
   getByStreamId,
-  create
+  create,
 }
