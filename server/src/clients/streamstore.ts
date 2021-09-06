@@ -11,7 +11,10 @@ export interface StreamInfo {
   stream?: Stream
 }
 
-const firestore = new Firestore({})
+const credsEnv = process.env.GOOGLE_CLOUD_CREDENTIALS
+const firestore = new Firestore({
+  credentials: credsEnv ? JSON.parse(credsEnv) : undefined,
+})
 const collectionRef = firestore.collection('justcast-streams')
 
 async function getByHumanId(humanId: string) {
