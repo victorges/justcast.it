@@ -11,10 +11,10 @@ export interface StreamInfo {
   stream?: Stream
 }
 
-const credsEnv = process.env.GOOGLE_CLOUD_CREDENTIALS
+const credentials = JSON.parse(process.env.GCLOUD_CREDENTIALS || 'null')
 const firestore = new Firestore({
-  projectId: 'justcast-it',
-  credentials: credsEnv ? JSON.parse(credsEnv) : undefined,
+  projectId: credentials?.project_id,
+  credentials,
 })
 const collectionRef = firestore.collection('justcast-streams')
 
