@@ -26,7 +26,10 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 		return nil, err
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		streamKey := req.URL.Query().Get("key")
+		var (
+			streamKey = req.URL.Query().Get("key")
+			mimeType  = req.URL.Query().Get("mimeType")
+		)
 		if streamKey == "" {
 			http.Error(rw, "missing streamKey query param", http.StatusBadRequest)
 			return
@@ -54,8 +57,9 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 
 		glog.Infof("Starting WebSocket ffmpeg process for url=%q", req.URL)
 		err = ffmpeg.Run(ctx, ffmpeg.Opts{
-			Output: ingestUrl.String(),
-			Stdin:  stdin,
+			Output:          ingestUrl.String(),
+			Stdin:           stdin,
+			InVideoMimeType: mimeType,
 		})
 		glog.Infof("Finished WebSocket ffmpeg process for url=%q err=%q", req.URL, err)
 
