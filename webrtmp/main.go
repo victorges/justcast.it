@@ -3,14 +3,18 @@
 package main
 
 import (
-	"log"
+	"flag"
 	"net/http"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/victorges/justcast.it/webrtmp/wrtc"
+	"github.com/victorges/justcast.it/webrtmp/ws"
 )
 
 func main() {
+	flag.Set("logtostderr", "true")
+	flag.Parse()
 
 	http.HandleFunc("/healthcheck", func(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusOK)
@@ -18,9 +22,15 @@ func main() {
 
 	wrtc, err := wrtc.Handler()
 	if err != nil {
-		log.Fatalf("Error initializing WebRTC handler: %v", err)
+		glog.Fatalf("Error initializing WebRTC handler: %v", err)
 	}
 	http.Handle("/webrtc/offer", wrtc)
+
+	ws, err := ws.Handler("rtmp://rtmp.livepeer.com/live")
+	if err != nil {
+		glog.Fatalf("Error initializing WebSocket handler: %v", err)
+	}
+	http.Handle("/ws", ws)
 
 	http.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
 
@@ -28,6 +38,6 @@ func main() {
 	if env, ok := os.LookupEnv("PORT"); ok {
 		port = env
 	}
-	log.Println("Listening on port :" + port)
+	glog.Infof("Listening on port :" + port)
 	http.ListenAndServe(":"+port, nil)
 }
