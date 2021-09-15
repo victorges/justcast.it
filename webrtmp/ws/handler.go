@@ -27,7 +27,7 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		var (
-			streamKey = req.URL.Query().Get("key")
+			streamKey = req.URL.Query().Get("streamKey")
 			mimeType  = req.URL.Query().Get("mimeType")
 		)
 		if streamKey == "" {
