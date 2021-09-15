@@ -7,6 +7,7 @@ kill_timeout = 10
 processes = []
 
 [env]
+  PORT = 8080
 
 [experimental]
   allowed_public_ports = []
@@ -27,6 +28,10 @@ processes = []
   [[services.ports]]
     handlers = ["tls", "http"]
     port = 443
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
 
   [[services.tcp_checks]]
     grace_period = "1s"
