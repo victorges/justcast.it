@@ -236,9 +236,6 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 	}
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Header().Set("Access-Control-Allow-Origin", "*")
-		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 		if req.Method != http.MethodPost {
 			if req.Method == http.MethodOptions {
 				rw.WriteHeader(http.StatusOK)

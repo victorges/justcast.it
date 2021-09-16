@@ -88,5 +88,13 @@ func httpHandler() http.Handler {
 	if enableFiddle {
 		mux.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
 	}
-	return mux
+	return cors(mux)
+}
+
+func cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		next.ServeHTTP(rw, r)
+	})
 }
