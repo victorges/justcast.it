@@ -8,12 +8,11 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/pion/webrtc/v3"
 )
 
 type Opts struct {
 	Input           []string
+	Stdin           io.Reader
 	InVideoMimeType string
 	Output          string
 }
@@ -22,7 +21,7 @@ var baseArgs = []string{"-f", "flv", "-c:a", "aac", "-b:a", "128k", "-ar", "4410
 
 var videoCopyArgs = append([]string{}, append(baseArgs, "-c:v", "copy")...)
 var videoTranscodeArgs = append([]string{}, append(baseArgs,
-	"-v:c", "libx264",
+	"-c:v", "libx264",
 	"-x264-params", "keyint=60:scenecut=0")...)
 
 func delayedCtx(ctx context.Context, delay time.Duration) context.Context {
@@ -40,7 +39,10 @@ func Run(ctx context.Context, opts Opts) error {
 	for _, in := range opts.Input {
 		args = append(args, "-i", in)
 	}
-	if strings.EqualFold(opts.InVideoMimeType, webrtc.MimeTypeH264) {
+	if opts.Stdin != nil && len(opts.Input) == 0 {
+		args = append(args, "-i", "-")
+	}
+	if strings.Contains(strings.ToUpper(opts.InVideoMimeType), "H264") {
 		args = append(args, videoCopyArgs...)
 	} else {
 		args = append(args, videoTranscodeArgs...)
@@ -55,6 +57,7 @@ func Run(ctx context.Context, opts Opts) error {
 		}
 	}()
 
+	cmd.Stdin = opts.Stdin
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
