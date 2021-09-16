@@ -6,12 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
-	"github.com/victorges/justcast.it/webrtmp/ffmpeg"
+	"github.com/livepeer/webrtmp-server/common"
+	"github.com/livepeer/webrtmp-server/ffmpeg"
 )
 
 var upgrader = websocket.Upgrader{
@@ -20,22 +20,17 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func Handler(rtmpUrl string) (http.Handler, error) {
+func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 	baseUrl, err := url.Parse(rtmpUrl)
 	if err != nil {
 		return nil, err
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		var (
-			streamKey = req.URL.Query().Get("streamKey")
-			mimeType  = req.URL.Query().Get("mimeType")
-		)
-		if streamKey == "" {
-			http.Error(rw, "missing streamKey query param", http.StatusBadRequest)
+		query, err := common.ParseQuery(baseUrl, req.URL.Query(), strict)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
-		ingestUrl := *baseUrl
-		ingestUrl.Path = path.Join(ingestUrl.Path, streamKey)
 
 		ws, err := upgrader.Upgrade(rw, req, nil)
 		if err != nil {
@@ -57,9 +52,9 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 
 		glog.Infof("Starting WebSocket ffmpeg process for url=%q", req.URL)
 		err = ffmpeg.Run(ctx, ffmpeg.Opts{
-			Output:          ingestUrl.String(),
+			Output:          query.FfmpegOutput,
+			InVideoMimeType: query.MimeType,
 			Stdin:           stdin,
-			InVideoMimeType: mimeType,
 		})
 		glog.Infof("Finished WebSocket ffmpeg process for url=%q err=%q", req.URL, err)
 

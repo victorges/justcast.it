@@ -3,11 +3,12 @@ package ffmpeg
 import (
 	"context"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 type Opts struct {
@@ -42,7 +43,7 @@ func Run(ctx context.Context, opts Opts) error {
 	if opts.Stdin != nil && len(opts.Input) == 0 {
 		args = append(args, "-i", "-")
 	}
-	if strings.Contains(strings.ToUpper(opts.InVideoMimeType), "H264") {
+	if IsH264(opts.InVideoMimeType) {
 		args = append(args, videoCopyArgs...)
 	} else {
 		args = append(args, videoTranscodeArgs...)
@@ -53,7 +54,7 @@ func Run(ctx context.Context, opts Opts) error {
 	go func() {
 		<-ctx.Done()
 		if err := cmd.Process.Signal(os.Interrupt); err != nil {
-			log.Println("Error interrupting ffmpeg:", err)
+			glog.Infoln("Error interrupting ffmpeg:", err)
 		}
 	}()
 
@@ -69,4 +70,8 @@ func Run(ctx context.Context, opts Opts) error {
 	go io.Copy(os.Stdout, stderr)
 	go io.Copy(os.Stdout, stdout)
 	return cmd.Run()
+}
+
+func IsH264(mimeType string) bool {
+	return strings.Contains(strings.ToUpper(mimeType), "H264")
 }

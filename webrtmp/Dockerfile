@@ -5,8 +5,11 @@ WORKDIR /usr/build
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . ./
-RUN GOOS=linux GOARCH=amd64 make build
+ARG version
+RUN echo $version
+
+COPY . .
+RUN GOOS=linux GOARCH=amd64 make "version=$version"
 
 FROM debian:stretch-slim
 

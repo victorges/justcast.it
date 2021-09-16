@@ -5,21 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/livepeer/webrtmp-server/common"
+	"github.com/livepeer/webrtmp-server/ffmpeg"
+	"github.com/livepeer/webrtmp-server/iox"
 	"github.com/pion/interceptor"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/h264writer"
 	"github.com/pion/webrtc/v3/pkg/media/oggwriter"
-	"github.com/victorges/justcast.it/webrtmp/ffmpeg"
-	"github.com/victorges/justcast.it/webrtmp/iox"
 )
 
 func getOggFile(dest io.WriteCloser) media.Writer {
@@ -91,9 +93,9 @@ func prepareFfmpeg(wg *sync.WaitGroup, baseOpts ffmpeg.Opts, numInputs int) (inp
 		opts := mergeOpts(baseOpts, inputChan, numInputs)
 		close(inputChan)
 
-		log.Println("Starting ffmpeg writing to", opts.Output)
+		glog.Infoln("Starting ffmpeg writing to", opts.Output)
 		if err := ffmpeg.Run(waitGroupContext(wg), opts); err != nil {
-			log.Println("Error returned by ffmpeg cmd", err)
+			glog.Infoln("Error returned by ffmpeg cmd", err)
 		}
 	}()
 	return inputChan
@@ -117,7 +119,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	conn.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("Panic processing WebRTC track: %v", rec)
+				glog.Infof("Panic processing WebRTC track: %v", rec)
 				conn.Close()
 				return
 			}
@@ -134,7 +136,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 				}
 				errSend := conn.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}})
 				if errSend != nil {
-					log.Println(errSend)
+					glog.Infoln(errSend)
 				}
 			}
 		}()
@@ -146,14 +148,14 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 
 		codec := track.Codec()
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
-			log.Println("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
+			glog.Infoln("Got Opus track, saving to disk as output.ogg (48 kHz, 2 channels)")
 			oggDest, oggPath, err := iox.NewSocketWriter(ctx)
 			if err != nil {
 				panic(err)
 			}
 			socketPath, lazyDest = oggPath, func() media.Writer { return getOggFile(oggDest) }
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeH264) {
-			log.Println("Got H.264 track, saving to disk as output.h264")
+			glog.Infoln("Got H.264 track, saving to disk as output.h264")
 			h264File, h264path := getH264File(ctx)
 			socketPath, lazyDest = h264path, func() media.Writer { return h264File }
 
@@ -163,17 +165,17 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 
 		err := saveToDisk(ctx, lazyDest(), track)
 		if err != nil {
-			log.Printf("Error saving %s to disk: %v\n", codec.MimeType, err)
+			glog.Infof("Error saving %s to disk: %v\n", codec.MimeType, err)
 		}
 	})
 
 	// Set the handler for ICE connection state
 	// This will notify you when the peer has connected/disconnected
 	conn.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		log.Println("Connection State has changed", connectionState)
+		glog.Infoln("Connection State has changed", connectionState)
 
 		if connectionState == webrtc.ICEConnectionStateConnected {
-			log.Println("Ctrl+C the remote client to stop the demo")
+			glog.Infoln("Ctrl+C the remote client to stop the demo")
 		} else if connectionState == webrtc.ICEConnectionStateFailed ||
 			connectionState == webrtc.ICEConnectionStateDisconnected {
 			conn.Close()
@@ -183,9 +185,13 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	return nil
 }
 
-func Handler() (http.Handler, error) {
-	// Everything below is the Pion WebRTC API! Thanks for using it ❤️.
+func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
+	baseUrl, err := url.Parse(rtmpUrl)
+	if err != nil {
+		return nil, err
+	}
 
+	// A lot below is the Pion WebRTC API! Thanks for using it ❤️.
 	// Create a MediaEngine object to configure the supported codec
 	engine := &webrtc.MediaEngine{}
 
@@ -266,14 +272,10 @@ func Handler() (http.Handler, error) {
 			return
 		}
 
-		var output string
-		query := req.URL.Query()
-		if rtmp := query.Get("rtmp"); rtmp != "" {
-			output = rtmp
-		} else if streamKey := query.Get("streamKey"); streamKey != "" {
-			output = "rtmp://rtmp.livepeer.com/live/" + streamKey
-		} else {
-			output = fmt.Sprintf("./out/output-%d.flv", time.Now().Unix())
+		query, err := common.ParseQuery(baseUrl, req.URL.Query(), strict)
+		if err != nil {
+			handleErr(err, http.StatusBadRequest)
+			return
 		}
 
 		// Create a new RTCPeerConnection
@@ -281,7 +283,7 @@ func Handler() (http.Handler, error) {
 		if handleErr(err, 0) {
 			return
 		}
-		err = configurePeerConnection(peerConnection, output)
+		err = configurePeerConnection(peerConnection, query.FfmpegOutput)
 		if handleErr(err, 0) {
 			return
 		}

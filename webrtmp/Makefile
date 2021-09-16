@@ -1,24 +1,39 @@
+version ?= $(shell git describe --tag --dirty)
+ldflags := -X 'main.Version=$(version)'
+
+dockerimg := livepeer/webrtmp-server
+
+.PHONY: build run docker docker_build docker_run docker_push
+
 build:
-	CGO_ENABLED=0 go build -o webrtmp
+	CGO_ENABLED=0 go build -o webrtmp -ldflags="$(ldflags)" main.go
 
 run:
-	go run main.go
+	LP_HOST=0.0.0.0 go run -ldflags="$(ldflags)" main.go
 
-docker: docker-build docker-run
+docker: docker_build docker_run
 
-docker-build:
-	docker build --progress=plain -t webrtmp .
+docker_build:
+	docker build --progress=plain -t $(dockerimg) -t $(dockerimg):$(version) --build-arg version=$(version) .
 
-docker-run:
-	docker run -it --rm -p 7867:7867 --name webrtmp webrtmp
+docker_run:
+	docker run -it --rm --name=webrtmp -p 7867:7867 -e LP_HOST=0.0.0.0 $(dockerimg) $(args)
 
-gcp: gcp-build gcp-deploy-gcrun gcp-deploy-gccompute
+docker_push:
+	docker push $(dockerimg):latest
+	docker push $(dockerimg):$(version)
 
-gcp-build:
+# Deprecated
+
+.PHONY: gcp gcp_build gcp_deploy_gcrun gcp_deploy_gccompute
+
+gcp: gcp_build gcp_deploy_gcrun gcp_deploy_gccompute
+
+gcp_build:
 	gcloud builds submit --tag us.gcr.io/justcast-it/justcast-it/webrtmp
 
-gcp-deploy-gcrun:
+gcp_deploy_gcrun:
 	gcloud run deploy --image=us.gcr.io/justcast-it/justcast-it/webrtmp:latest --platform=managed --region=southamerica-east1 webrtmp
 
-gcp-deploy-gccompute:
+gcp_deploy_gccompute:
 	gcloud compute instance-groups managed rolling-action restart go-webrtmp-ig-ue1 --region=us-east1
