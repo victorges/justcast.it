@@ -3,7 +3,6 @@ package wrtc
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -14,9 +13,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/livepeer/webrtmp-server/common"
 	"github.com/livepeer/webrtmp-server/ffmpeg"
 	"github.com/livepeer/webrtmp-server/iox"
-	"github.com/livepeer/webrtmp-server/util"
 	"github.com/pion/interceptor"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
@@ -273,23 +272,10 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 			return
 		}
 
-		var output string
-		query := req.URL.Query()
-		streamKey := query.Get("streamKey")
-		if strict {
-			if streamKey == "" {
-				handleErr(errors.New("missing streamKey query param"), http.StatusBadRequest)
-				return
-			}
-			output = util.JoinPath(baseUrl, streamKey).String()
-		} else {
-			if rtmp := query.Get("rtmp"); rtmp != "" {
-				output = rtmp
-			} else if streamKey := query.Get("streamKey"); streamKey != "" {
-				output = util.JoinPath(baseUrl, streamKey).String()
-			} else {
-				output = fmt.Sprintf("./out/output-%d.flv", time.Now().Unix())
-			}
+		query, err := common.ParseQuery(baseUrl, req.URL.Query(), strict)
+		if err != nil {
+			handleErr(err, http.StatusBadRequest)
+			return
 		}
 
 		// Create a new RTCPeerConnection
@@ -297,7 +283,7 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 		if handleErr(err, 0) {
 			return
 		}
-		err = configurePeerConnection(peerConnection, output)
+		err = configurePeerConnection(peerConnection, query.FfmpegOutput)
 		if handleErr(err, 0) {
 			return
 		}

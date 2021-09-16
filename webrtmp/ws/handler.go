@@ -10,8 +10,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
+	"github.com/livepeer/webrtmp-server/common"
 	"github.com/livepeer/webrtmp-server/ffmpeg"
-	"github.com/livepeer/webrtmp-server/util"
 )
 
 var upgrader = websocket.Upgrader{
@@ -26,16 +26,9 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 		return nil, err
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		var (
-			streamKey = req.URL.Query().Get("streamKey")
-			mimeType  = req.URL.Query().Get("mimeType")
-		)
-		if streamKey == "" {
-			http.Error(rw, "missing streamKey query param", http.StatusBadRequest)
-			return
-		}
-		if strict && !ffmpeg.IsH264(mimeType) {
-			http.Error(rw, "unsupported mimeType: "+mimeType, http.StatusBadRequest)
+		query, err := common.ParseQuery(baseUrl, req.URL.Query(), strict)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -59,9 +52,9 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 
 		glog.Infof("Starting WebSocket ffmpeg process for url=%q", req.URL)
 		err = ffmpeg.Run(ctx, ffmpeg.Opts{
-			Output:          util.JoinPath(baseUrl, streamKey).String(),
+			Output:          query.FfmpegOutput,
+			InVideoMimeType: query.MimeType,
 			Stdin:           stdin,
-			InVideoMimeType: mimeType,
 		})
 		glog.Infof("Finished WebSocket ffmpeg process for url=%q err=%q", req.URL, err)
 
