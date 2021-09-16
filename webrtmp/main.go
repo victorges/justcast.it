@@ -56,29 +56,37 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/_healthz", func(rw http.ResponseWriter, req *http.Request) {
+	glog.Infof("WebRTMP server version=%q", Version)
+
+	addr := fmt.Sprintf("%s:%d", host, port)
+	handler := httpHandler()
+
+	glog.Infof("Listening on: %s", addr)
+	if err := http.ListenAndServe(addr, handler); err != nil {
+		glog.Fatalf("Error starting server: %v", err)
+	}
+}
+
+func httpHandler() http.Handler {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/_healthz", func(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	})
-
 	wrtc, err := wrtc.Handler(rtmpUrl, strictProtocol)
 	if err != nil {
 		glog.Fatalf("Error initializing WebRTC handler: %v", err)
 	}
-	http.Handle(path.Join(apiRoot, "/wrtc/offer"), wrtc)
+	mux.Handle(path.Join(apiRoot, "/wrtc/offer"), wrtc)
 
 	ws, err := ws.Handler(rtmpUrl, strictProtocol)
 	if err != nil {
 		glog.Fatalf("Error initializing WebSocket handler: %v", err)
 	}
-	http.Handle(path.Join(apiRoot, "/ws"), ws)
+	mux.Handle(path.Join(apiRoot, "/ws"), ws)
 
 	if enableFiddle {
-		http.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
+		mux.Handle("/", http.FileServer(http.Dir("./jsfiddle")))
 	}
-
-	addr := fmt.Sprintf("%s:%d", host, port)
-	glog.Infof("Listening on: %s", addr)
-	if err = http.ListenAndServe(addr, nil); err != nil {
-		glog.Fatalf("Error starting server: %v", err)
-	}
+	return mux
 }
