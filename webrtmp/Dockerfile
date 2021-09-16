@@ -24,4 +24,4 @@ RUN mkdir ./out
 COPY --from=build /usr/build/jsfiddle ./jsfiddle
 COPY --from=build /usr/build/webrtmp ./
 
-CMD [ "./webrtmp" ]
+ENTRYPOINT [ "./webrtmp" ]
