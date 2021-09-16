@@ -7,7 +7,10 @@ kill_timeout = 10
 processes = []
 
 [env]
-  PORT = 8080
+  LP_HOST = 0.0.0.0
+  LP_PORT = 8080
+  LP_ENABLE_FIDDLE = true
+  LP_API_ROOT = /
 
 [experimental]
   allowed_public_ports = []

@@ -8,18 +8,20 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/livepeer/webrtmp-server/ffmpeg"
+	"github.com/livepeer/webrtmp-server/iox"
+	"github.com/livepeer/webrtmp-server/util"
 	"github.com/pion/interceptor"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/h264writer"
 	"github.com/pion/webrtc/v3/pkg/media/oggwriter"
-	"github.com/victorges/justcast.it/webrtmp/ffmpeg"
-	"github.com/victorges/justcast.it/webrtmp/iox"
 )
 
 func getOggFile(dest io.WriteCloser) media.Writer {
@@ -183,9 +185,13 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	return nil
 }
 
-func Handler() (http.Handler, error) {
-	// Everything below is the Pion WebRTC API! Thanks for using it ❤️.
+func Handler(rtmpUrl string) (http.Handler, error) {
+	baseUrl, err := url.Parse(rtmpUrl)
+	if err != nil {
+		return nil, err
+	}
 
+	// A lot below is the Pion WebRTC API! Thanks for using it ❤️.
 	// Create a MediaEngine object to configure the supported codec
 	engine := &webrtc.MediaEngine{}
 
@@ -271,7 +277,7 @@ func Handler() (http.Handler, error) {
 		if rtmp := query.Get("rtmp"); rtmp != "" {
 			output = rtmp
 		} else if streamKey := query.Get("streamKey"); streamKey != "" {
-			output = "rtmp://rtmp.livepeer.com/live/" + streamKey
+			output = util.JoinPath(baseUrl, streamKey).String()
 		} else {
 			output = fmt.Sprintf("./out/output-%d.flv", time.Now().Unix())
 		}

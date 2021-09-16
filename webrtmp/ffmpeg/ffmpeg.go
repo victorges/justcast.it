@@ -42,7 +42,7 @@ func Run(ctx context.Context, opts Opts) error {
 	if opts.Stdin != nil && len(opts.Input) == 0 {
 		args = append(args, "-i", "-")
 	}
-	if strings.Contains(strings.ToUpper(opts.InVideoMimeType), "H264") {
+	if IsH264(opts.InVideoMimeType) {
 		args = append(args, videoCopyArgs...)
 	} else {
 		args = append(args, videoTranscodeArgs...)
@@ -69,4 +69,8 @@ func Run(ctx context.Context, opts Opts) error {
 	go io.Copy(os.Stdout, stderr)
 	go io.Copy(os.Stdout, stdout)
 	return cmd.Run()
+}
+
+func IsH264(mimeType string) bool {
+	return strings.Contains(strings.ToUpper(mimeType), "H264")
 }

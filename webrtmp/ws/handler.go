@@ -6,12 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
-	"github.com/victorges/justcast.it/webrtmp/ffmpeg"
+	"github.com/livepeer/webrtmp-server/ffmpeg"
+	"github.com/livepeer/webrtmp-server/util"
 )
 
 var upgrader = websocket.Upgrader{
@@ -34,8 +34,6 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 			http.Error(rw, "missing streamKey query param", http.StatusBadRequest)
 			return
 		}
-		ingestUrl := *baseUrl
-		ingestUrl.Path = path.Join(ingestUrl.Path, streamKey)
 
 		ws, err := upgrader.Upgrade(rw, req, nil)
 		if err != nil {
@@ -57,7 +55,7 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 
 		glog.Infof("Starting WebSocket ffmpeg process for url=%q", req.URL)
 		err = ffmpeg.Run(ctx, ffmpeg.Opts{
-			Output:          ingestUrl.String(),
+			Output:          util.JoinPath(baseUrl, streamKey).String(),
 			Stdin:           stdin,
 			InVideoMimeType: mimeType,
 		})
