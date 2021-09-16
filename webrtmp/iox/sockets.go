@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"sync/atomic"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 var socketIdCounter int64 = 0
@@ -39,7 +40,7 @@ func NewSocketWriter(ctx context.Context) (w io.WriteCloser, path string, err er
 		// We only support 1 reader
 		conn, err := l.Accept()
 		if err != nil {
-			log.Fatal("accept error:", err)
+			glog.Fatal("accept error:", err)
 		}
 		defer conn.Close()
 
@@ -51,20 +52,20 @@ func NewSocketWriter(ctx context.Context) (w io.WriteCloser, path string, err er
 				err = nil
 				break
 			} else if err != nil {
-				log.Printf("Error reading pipe: %v\n", err)
+				glog.Infof("Error reading pipe: %v\n", err)
 				break
 			}
 
 			conn.SetDeadline(time.Now().Add(5 * time.Second))
 			n, err = conn.Write(buf[:n])
 			if err != nil {
-				log.Printf("Error writing to unix socket: %v\n", err)
+				glog.Infof("Error writing to unix socket: %v\n", err)
 				break
 			}
 			bytes += n
 		}
 		mib := float64(bytes) / 1024 / 1024
-		log.Printf("Piped %.1fMiB bytes through socket\n", mib)
+		glog.Infof("Piped %.1fMiB bytes through socket\n", mib)
 	}()
 	return pipeWrite, path, nil
 }

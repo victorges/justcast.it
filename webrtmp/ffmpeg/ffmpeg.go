@@ -3,11 +3,12 @@ package ffmpeg
 import (
 	"context"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 type Opts struct {
@@ -53,7 +54,7 @@ func Run(ctx context.Context, opts Opts) error {
 	go func() {
 		<-ctx.Done()
 		if err := cmd.Process.Signal(os.Interrupt); err != nil {
-			log.Println("Error interrupting ffmpeg:", err)
+			glog.Infoln("Error interrupting ffmpeg:", err)
 		}
 	}()
 
