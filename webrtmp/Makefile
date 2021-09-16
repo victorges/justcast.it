@@ -3,7 +3,7 @@ ldflags := -X 'main.Version=$(version)'
 
 dockerimg := livepeer/webrtmp-server
 
-.PHONY: build run docker docker_build docker_run docker_push
+.PHONY: build run docker publish docker_build docker_run docker_push
 
 build:
 	CGO_ENABLED=0 go build -o webrtmp -ldflags="$(ldflags)" main.go
@@ -12,6 +12,7 @@ run:
 	LP_HOST=0.0.0.0 go run -ldflags="$(ldflags)" main.go
 
 docker: docker_build docker_run
+publish: docker_build docker_push
 
 docker_build:
 	docker build --progress=plain -t $(dockerimg) -t $(dockerimg):$(version) --build-arg version=$(version) .
