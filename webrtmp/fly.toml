@@ -11,6 +11,7 @@ processes = []
   LP_PORT = 8080
   LP_ENABLE_FIDDLE = true
   LP_API_ROOT = /
+  LP_STRICT_PROTOCOL = false
 
 [experimental]
   allowed_public_ports = []

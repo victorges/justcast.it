@@ -3,6 +3,7 @@ package wrtc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -185,7 +186,7 @@ func configurePeerConnection(conn *webrtc.PeerConnection, output string) error {
 	return nil
 }
 
-func Handler(rtmpUrl string) (http.Handler, error) {
+func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 	baseUrl, err := url.Parse(rtmpUrl)
 	if err != nil {
 		return nil, err
@@ -274,12 +275,21 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 
 		var output string
 		query := req.URL.Query()
-		if rtmp := query.Get("rtmp"); rtmp != "" {
-			output = rtmp
-		} else if streamKey := query.Get("streamKey"); streamKey != "" {
+		streamKey := query.Get("streamKey")
+		if strict {
+			if streamKey == "" {
+				handleErr(errors.New("missing streamKey query param"), http.StatusBadRequest)
+				return
+			}
 			output = util.JoinPath(baseUrl, streamKey).String()
 		} else {
-			output = fmt.Sprintf("./out/output-%d.flv", time.Now().Unix())
+			if rtmp := query.Get("rtmp"); rtmp != "" {
+				output = rtmp
+			} else if streamKey := query.Get("streamKey"); streamKey != "" {
+				output = util.JoinPath(baseUrl, streamKey).String()
+			} else {
+				output = fmt.Sprintf("./out/output-%d.flv", time.Now().Unix())
+			}
 		}
 
 		// Create a new RTCPeerConnection

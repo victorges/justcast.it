@@ -22,11 +22,12 @@ var (
 	Version = "undefined"
 
 	// CLI flags, bound in init below
-	host         string
-	port         uint
-	apiRoot      string
-	enableFiddle bool
-	rtmpUrl      string
+	host           string
+	port           uint
+	apiRoot        string
+	enableFiddle   bool
+	rtmpUrl        string
+	strictProtocol bool
 )
 
 func init() {
@@ -38,6 +39,7 @@ func init() {
 	fs.StringVar(&apiRoot, "api-root", "/webrtmp", "Root path where to bind the API to")
 	fs.BoolVar(&enableFiddle, "enable-fiddle", false, "Wether to serve some static files on root path to test service")
 	fs.StringVar(&rtmpUrl, "rtmp-url", "rtmp://rtmp.livepeer.com/live/", "RTMP endpoint where to push streams to")
+	fs.BoolVar(&strictProtocol, "strict-protocol", true, "With strict protocol, accept only safer requests. That includes only video-copy (no transcoding) and no custom RTMP URLs.")
 
 	flag.Set("logtostderr", "true")
 	glogVFlag := flag.Lookup("v")
@@ -58,13 +60,13 @@ func main() {
 		rw.WriteHeader(http.StatusOK)
 	})
 
-	wrtc, err := wrtc.Handler(rtmpUrl)
+	wrtc, err := wrtc.Handler(rtmpUrl, strictProtocol)
 	if err != nil {
 		glog.Fatalf("Error initializing WebRTC handler: %v", err)
 	}
 	http.Handle(path.Join(apiRoot, "/wrtc/offer"), wrtc)
 
-	ws, err := ws.Handler(rtmpUrl)
+	ws, err := ws.Handler(rtmpUrl, strictProtocol)
 	if err != nil {
 		glog.Fatalf("Error initializing WebSocket handler: %v", err)
 	}

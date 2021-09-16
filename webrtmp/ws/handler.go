@@ -20,7 +20,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func Handler(rtmpUrl string) (http.Handler, error) {
+func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 	baseUrl, err := url.Parse(rtmpUrl)
 	if err != nil {
 		return nil, err
@@ -32,6 +32,10 @@ func Handler(rtmpUrl string) (http.Handler, error) {
 		)
 		if streamKey == "" {
 			http.Error(rw, "missing streamKey query param", http.StatusBadRequest)
+			return
+		}
+		if strict && !ffmpeg.IsH264(mimeType) {
+			http.Error(rw, "unsupported mimeType: "+mimeType, http.StatusBadRequest)
 			return
 		}
 
