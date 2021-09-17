@@ -23,7 +23,7 @@ gcp_push:
 	docker push $(gcrimg)
 
 gcp_run:
-	gcloud run deploy --image=$(gcrimg)) --platform=managed --region=southamerica-east1 webrtmp
+	gcloud run deploy --image=$(gcrimg) --platform=managed --region=southamerica-east1 webrtmp
 
 gcp_compute:
 	gcloud compute instance-groups managed rolling-action restart go-webrtmp-ig-ue1 --region=us-east1

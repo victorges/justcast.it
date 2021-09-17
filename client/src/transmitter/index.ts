@@ -142,9 +142,6 @@ function requestedTransport() {
 function startRecording(stream: MediaStream) {
   if (_currCast || !_streamKey) {
     return
-  } else if (!isSupported()) {
-    alert('Please use an H.264 compatible browser like Chrome Desktop')
-    return
   }
   console.log('startRecording')
 
@@ -154,10 +151,15 @@ function startRecording(stream: MediaStream) {
   }
 
   const requestedTransp = requestedTransport()
+  const transport = requestedTransp ?? (isSupported() ? 'ws' : 'wrtc')
 
-  const transport = requestedTransp ?? 'ws'
+  let baseUrl: string
+  if (transport === 'wrtc') {
+    // our own server actually supports wrtc
+    baseUrl = 'webrtmp.justcast.it'
+  }
 
-  const client = new Client({ transport })
+  const client = new Client({ baseUrl, transport })
 
   const connectTime = Date.now()
 
