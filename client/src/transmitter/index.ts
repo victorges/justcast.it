@@ -1,5 +1,5 @@
 import { copyToClipboard } from '../clipboard'
-import cast from './cast'
+import { Client, CastSession, WebSocketError } from '@livepeer/webrtmp-sdk'
 
 type Transport = 'wrtc' | 'ws'
 
@@ -147,22 +147,23 @@ function startRecording(stream: MediaStream) {
 
   const requestedTransp = requestedTransport()
 
-  const isH264 = cast.wsMimeType.indexOf('h264') > 0
+  const transport = requestedTransp ?? 'ws'
 
-  const transport = requestedTransp ?? (isH264 ? 'ws' : 'wrtc')
+  const client = new Client({ transport })
 
   const connectTime = Date.now()
 
-  let newCast: CastSession
-  if (transport === 'wrtc') {
-    newCast = cast.viaWebRTC(stream, _streamKey)
-  } else {
-    newCast = cast.viaWebSocket(stream, _streamKey, !_playbackId)
-  }
+  const newCast: CastSession = client.cast(stream, _streamKey)
 
   _currCast = newCast
 
-  newCast.onError = (isTransient) => {
+  newCast.on('error', (err) => {
+    let isTransient: boolean = false
+    if (err instanceof WebSocketError) {
+      const { code } = err
+      isTransient = code === 106
+    }
+
     if (_currCast !== newCast) {
       return
     }
@@ -174,7 +175,7 @@ function startRecording(stream: MediaStream) {
     if (shouldRetry) {
       startRecording(stream)
     }
-  }
+  })
 
   _record.style.background = '#dd0000'
   _record.style.borderColor = '#dd0000'

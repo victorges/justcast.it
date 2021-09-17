@@ -6,6 +6,9 @@ kill_signal = "SIGINT"
 kill_timeout = 10
 processes = []
 
+[build]
+  image = "livepeer/webrtmp-server:latest"
+
 [env]
   LP_HOST = "0.0.0.0"
   LP_PORT = "8080"
