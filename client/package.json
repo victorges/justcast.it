@@ -21,7 +21,7 @@
   "author": "Neolag Fresh Ventures",
   "license": "MIT",
   "dependencies": {
-    "@livepeer/webrtmp-sdk": "^0.2.1",
+    "@livepeer/webrtmp-sdk": "^0.2.2",
     "is-ip": "^3.1.0"
   },
   "devDependencies": {

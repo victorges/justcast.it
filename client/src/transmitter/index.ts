@@ -1,5 +1,10 @@
 import { copyToClipboard } from '../clipboard'
-import { Client, CastSession, WebSocketError } from '@livepeer/webrtmp-sdk'
+import {
+  Client,
+  CastSession,
+  WebSocketError,
+  isSupported,
+} from '@livepeer/webrtmp-sdk'
 
 type Transport = 'wrtc' | 'ws'
 
@@ -28,10 +33,10 @@ window.addEventListener('resize', () => {
 
 resizeCanvas()
 
+const _canvasCtx = _canvas.getContext('2d')
+
 // @ts-ignore
 const _canvasStream = _canvas.captureStream()
-
-const _canvasCtx = _canvas.getContext('2d')
 
 let _stream: MediaStream
 
@@ -135,7 +140,10 @@ function requestedTransport() {
 }
 
 function startRecording(stream: MediaStream) {
-  if (_currCast || !window.MediaRecorder || !_streamKey) {
+  if (_currCast || !_streamKey) {
+    return
+  } else if (!isSupported()) {
+    alert('Please use an H.264 compatible browser like Chrome Desktop')
     return
   }
   console.log('startRecording')
