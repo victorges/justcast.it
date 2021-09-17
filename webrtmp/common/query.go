@@ -16,13 +16,17 @@ type ParsedQuery struct {
 }
 
 func ParseQuery(baseUrl *url.URL, query url.Values, strict bool) (ParsedQuery, error) {
-	output, err := ffmpegOutput(baseUrl, query.Get("streamKey"), query.Get("rtmp"), strict)
+	output, err := ParseFfmpegOutput(baseUrl, query, strict)
 	if err != nil {
 		return ParsedQuery{}, err
 	}
 	mimeType := query.Get("mimeType")
 	if strict && !ffmpeg.IsH264(mimeType) {
-		return ParsedQuery{}, fmt.Errorf("unsupported mimeType: %s", mimeType)
+		if mimeType == "" {
+			return ParsedQuery{}, errors.New("missing mimeType query param")
+		} else {
+			return ParsedQuery{}, fmt.Errorf("unsupported mimeType: %s", mimeType)
+		}
 	}
 	return ParsedQuery{
 		FfmpegOutput: output,
@@ -30,7 +34,8 @@ func ParseQuery(baseUrl *url.URL, query url.Values, strict bool) (ParsedQuery, e
 	}, nil
 }
 
-func ffmpegOutput(baseUrl *url.URL, streamKey, rtmp string, strict bool) (string, error) {
+func ParseFfmpegOutput(baseUrl *url.URL, query url.Values, strict bool) (string, error) {
+	streamKey, rtmp := query.Get("streamKey"), query.Get("rtmp")
 	if streamKey != "" {
 		return joinPath(baseUrl, streamKey).String(), nil
 	} else if strict {

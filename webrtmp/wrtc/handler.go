@@ -269,7 +269,7 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 			return
 		}
 
-		query, err := common.ParseQuery(baseUrl, req.URL.Query(), strict)
+		output, err := common.ParseFfmpegOutput(baseUrl, req.URL.Query(), strict)
 		if err != nil {
 			handleErr(err, http.StatusBadRequest)
 			return
@@ -280,7 +280,7 @@ func Handler(rtmpUrl string, strict bool) (http.Handler, error) {
 		if handleErr(err, 0) {
 			return
 		}
-		err = configurePeerConnection(peerConnection, query.FfmpegOutput)
+		err = configurePeerConnection(peerConnection, output)
 		if handleErr(err, 0) {
 			return
 		}
