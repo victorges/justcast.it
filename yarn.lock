@@ -51,10 +51,10 @@
     protobufjs "^6.10.0"
     yargs "^16.1.1"
 
-"@livepeer/webrtmp-sdk@^0.2.2":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@livepeer/webrtmp-sdk/-/webrtmp-sdk-0.2.2.tgz#72907dd464705a4f56403914a88c185d28606862"
-  integrity sha512-VB1NwCikhxv0Ykyoa7dxKlWF963oOpAFbtU6Nl2hv8BiNyd4FbIbcFGPekwOopN5e8UueHQiGHY4tnP5ZPrd0A==
+"@livepeer/webrtmp-sdk@^0.2.3":
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@livepeer/webrtmp-sdk/-/webrtmp-sdk-0.2.3.tgz#10c5baca5517b8f14ec766df15be467d14e7c8d7"
+  integrity sha512-tJ2gGhUZfbeXmIkZHxY/WNS0C9SYUhJ/6QlYhot1CJlBuXkuoki9gSGhYhS3G7Vu/HchL1HU/DXWKhrQhlogXg==
   dependencies:
     events "3.3.0"
 

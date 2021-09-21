@@ -151,15 +151,8 @@ function startRecording(stream: MediaStream) {
   }
 
   const requestedTransp = requestedTransport()
-  const transport = requestedTransp ?? (isSupported() ? 'ws' : 'wrtc')
-
-  let baseUrl: string
-  if (transport === 'wrtc') {
-    // our own server actually supports wrtc
-    baseUrl = 'webrtmp.justcast.it'
-  }
-
-  const client = new Client({ baseUrl, transport })
+  const transport = requestedTransp ?? 'auto'
+  const client = new Client({ transport })
 
   const connectTime = Date.now()
 
