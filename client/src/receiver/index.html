@@ -9,12 +9,7 @@
 
     <title>Just Cast It</title>
 
-    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
-    <link
-      href="https://unpkg.com/@silvermine/videojs-quality-selector/dist/css/quality-selector.css"
-      rel="stylesheet"
-    />
-
+    <link href="https://vjs.zencdn.net/7.18.1/video-js.css" rel="stylesheet" />
     <link href="index.css" rel="stylesheet" />
   </head>
   <body>
@@ -23,9 +18,18 @@
       class="video-js vjs-default-skin"
       autoplay
       data-setup='{ "controls": false, "autoplay": true, "preload": "auto" }'
-    ></video>
-    <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
-    <script src="https://unpkg.com/@videojs/http-streaming@2.8.2/dist/videojs-http-streaming.js"></script>
+    >
+      <p class="vjs-no-js">
+        To view this video please enable JavaScript, and consider upgrading to a
+        web browser that
+        <a href="https://videojs.com/html5-video-support/" target="_blank">
+          supports HTML5 video
+        </a>
+      </p>
+    </video>
+    <script src="https://vjs.zencdn.net/7.18.1/video.min.js"></script>
+    <script src="https://unpkg.com/videojs-contrib-quality-levels@2.1.0/dist/videojs-contrib-quality-levels.min.js"></script>
+    <script src="https://unpkg.com/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.min.js"></script>
+    <script src="bundle.js"></script>
   </body>
-  <script src="bundle.js"></script>
 </html>
