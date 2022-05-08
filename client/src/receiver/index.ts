@@ -37,5 +37,7 @@ fetch(`/api/stream/${humanId}`)
       type: 'application/x-mpegURL',
       withCredentials: false,
     })
-    player.hlsQualitySelector()
+    player.hlsQualitySelector({
+      displayCurrentQuality: true,
+    })
   })
