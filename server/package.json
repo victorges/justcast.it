@@ -21,6 +21,7 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-ws": "^4.0.0",
+    "siwe": "^1.1.6",
     "unique-names-generator": "^4.5.0",
     "wrtc": "^0.4.7",
     "ws": "^7.4.6"
