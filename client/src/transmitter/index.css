@@ -68,23 +68,27 @@ body {
   background: #444444;
 }
 
-.record-container,
-.media-container {
-  display: none;
+.button-container {
+  display: block;
   position: absolute;
-  /* top: 24px; */
-  /* right: 24px; */
-  bottom: 24px;
-  left: 50%;
   transform: translateX(-50%);
-  border-radius: 30px;
-  width: 60px;
-  height: 60px;
   background: #222222;
   opacity: 0.5;
   pointer-events: all;
   transition: opacity 0.2s linear, border-radius 0.2s linear;
   cursor: pointer;
+}
+
+.button-container:hover {
+  opacity: 1;
+}
+
+.record-container {
+  width: 60px;
+  height: 60px;
+  bottom: 24px;
+  border-radius: 30px;
+  left: 50%;
 }
 
 .media-container {
@@ -95,33 +99,46 @@ body {
   left: calc(50% - 60px);
 }
 
-.record-container:hover,
-.media-container:hover {
-  opacity: 1;
+.wallet-container {
+  width: 60px;
+  height: 60px;
+  top: 24px;
+  right: 24px;
+  border-radius: 30px;
 }
 
-.record,
-.media {
+.button {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 30px;
-  height: 30px;
   transform: translate(-50%, -50%);
-  /* background: #dd0000; */
-  background: #dddddd;
   border-width: 3px;
   border-style: solid;
-  border-color: #dddddd;
-  border-radius: 15px;
   cursor: pointer;
   box-sizing: border-box;
   transition: opacity 0.2s linear, color 0.2s linear, border-radius 0.2s linear;
+}
+
+.record {
+  width: 30px;
+  height: 30px;
+  background: #dddddd;
+  border-color: #dddddd;
+  border-radius: 15px;
 }
 
 .media {
   width: 15px;
   height: 15px;
   background: #00000000;
+  border-color: #dddddd;
   border-radius: 3px;
+}
+
+.wallet {
+  width: 30px;
+  height: 30px;
+  background: #8a5000b5;
+  border-color: #e97c07;
+  border-radius: 1px;
 }

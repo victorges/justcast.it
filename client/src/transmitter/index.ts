@@ -46,7 +46,6 @@ _playbackUrl.onclick = () => {
 }
 
 const _recordContainer = document.getElementById('record-container')
-_recordContainer.style.display = 'block'
 _recordContainer.onclick = () => {
   if (_currCast) {
     stopRecording()
@@ -60,7 +59,6 @@ _recordContainer.onclick = () => {
 const _record = document.getElementById('record')
 
 const _mediaContainer = document.getElementById('media-container')
-_mediaContainer.style.display = 'block'
 _mediaContainer.onclick = () => {
   if (_mediaDisplay) {
     refreshMediaToUser()
