@@ -4,7 +4,7 @@ on:
   push: {}
 
 env:
-  REGISTRY: hub.docker.com
+  REGISTRY: docker.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
