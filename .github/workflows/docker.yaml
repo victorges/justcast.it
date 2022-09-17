@@ -4,7 +4,7 @@ on:
   push: {}
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: hub.docker.com
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
