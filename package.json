@@ -16,8 +16,9 @@
     "clean": "rm -r dist",
     "build": "mkdir -p dist && concurrently --names server,client 'cd server && yarn build' 'cd client && yarn build'",
     "watch": "mkdir -p dist && concurrently --names server,client 'cd server && yarn watch' 'cd client && yarn watch'",
-    "docker": "run-s docker:build docker:start",
+    "docker": "run-s docker:build docker:push",
     "docker:build": "docker build --progress=plain -t justcast-it .",
+    "docker:push": "docker push $(printf ' -t victorges/justcast.it:%s' ${DOCKER_TAGS:-dev})",
     "docker:start": "docker run -it --rm -p 8080:8080 -v \"$(pwd)/.secrets\":/usr/app/.secrets:ro --name justcast-it justcast-it"
   },
   "workspaces": [
