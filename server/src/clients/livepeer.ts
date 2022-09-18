@@ -56,7 +56,7 @@ export class API {
 
   async getStreamById(id: string) {
     const response = await this.http.get<Stream>(`/stream/${id}`)
-    return response.status === 200 ? response.data : null
+    return response.data
   }
 
   async getStreamByName(name: string) {
@@ -64,9 +64,6 @@ export class API {
     const response = await this.http.get<Stream[]>(
       `/stream?filters=${JSON.stringify(filters)}&limit=2`
     )
-    if (response.status !== 200) {
-      return null
-    }
     const streams = response.data
     if (!streams?.length) {
       console.warn(`No streams found with name ${name}`)

@@ -20,6 +20,7 @@
     "cookie-parser": "^1.4.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "express-async-errors": "^3.1.1",
     "unique-names-generator": "^4.5.0"
   },
   "devDependencies": {
