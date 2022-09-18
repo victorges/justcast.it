@@ -1,0 +1,21 @@
+services:
+  justserve-it:
+    build: .
+    scale: 2
+    environment:
+      - PORT=8080
+      - LIVEPEER_API_TOKEN=${LIVEPEER_API_TOKEN}
+    ports: [8080]
+    healthcheck:
+      start_period: 5s
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      http:
+        path: /
+        port: 8080
+
+endpoints:
+ - path: /
+   service: justserve-it
+   port: 8080
