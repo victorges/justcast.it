@@ -30,6 +30,17 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=schedule,pattern={{date 'YYYYMMDDHHmmss'}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            type=sha
+            type=sha,format=long
+            type=semver,pattern={{version}},prefix=v
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{major}}.{{minor}},prefix=v
+            type=raw,value=${{ github.event.pull_request.head.ref }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
