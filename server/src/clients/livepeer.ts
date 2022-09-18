@@ -44,7 +44,7 @@ export class API {
   private readonly http: AxiosInstance
 
   constructor(apiToken?: string) {
-    apiToken ??= process.env['LIVEPEER_API_TOKEN']
+    apiToken ??= process.env.LIVEPEER_API_KEY
     this.http = axios.create({
       baseURL: 'https://livepeer.com/api',
       responseType: 'json',

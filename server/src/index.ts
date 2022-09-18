@@ -1,4 +1,4 @@
-require('dotenv').config({ path: './.secrets/env' })
+require('dotenv').config()
 
 import express from 'express'
 import cookieParser from 'cookie-parser'
