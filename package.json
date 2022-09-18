@@ -19,7 +19,8 @@
     "docker": "run-s docker:build docker:push",
     "docker:build": "docker build --progress=plain -t justcast-it .",
     "docker:push": "docker push $(printf ' -t victorges/justcast.it:%s' ${DOCKER_TAGS:-dev})",
-    "docker:start": "docker run -it --rm -p 8080:8080 -v \"$(pwd)/.secrets\":/usr/app/.secrets:ro --name justcast-it justcast-it"
+    "docker:start": "docker compose up --build",
+    "docker:stop": "docker compose down"
   },
   "workspaces": [
     "server",

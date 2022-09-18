@@ -4,7 +4,7 @@ services:
     scale: 1
     environment:
       - PORT=8080
-      - LIVEPEER_API_TOKEN=${LIVEPEER_API_TOKEN}
+      - LIVEPEER_API_KEY=${LIVEPEER_API_KEY}
     ports:
      - 8080:8080
     healthcheck:
