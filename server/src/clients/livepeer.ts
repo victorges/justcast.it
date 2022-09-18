@@ -10,6 +10,7 @@ export interface TranscodingProfile {
 
 export interface Stream {
   id: string
+  name: string
   createdAt: number
   createdByTokenName: string
   isActive: boolean
@@ -27,13 +28,6 @@ export interface Stream {
   userID: string
 }
 
-const defaultProfiles: TranscodingProfile[] = [
-  { name: '240p0', fps: 0, bitrate: 250000, width: 426, height: 240 },
-  { name: '360p0', fps: 0, bitrate: 800000, width: 640, height: 360 },
-  { name: '480p0', fps: 0, bitrate: 1600000, width: 854, height: 480 },
-  { name: '720p0', fps: 0, bitrate: 3000000, width: 1280, height: 720 },
-]
-
 export const playbackUrl = (playbackId: string) =>
   `https://cdn.livepeer.com/hls/${playbackId}/index.m3u8`
 
@@ -41,7 +35,8 @@ export const streamUrl = (streamKey: string) =>
   `rtmp://rtmp.livepeer.com/live/${streamKey}`
 
 export const extractStreamKey = (streamUrl: string) => {
-  const matches = /rtmp:\/\/rtmp\.livepeer\.com\/live\/(.+)/.exec(streamUrl) ?? []
+  const matches =
+    /rtmp:\/\/rtmp\.livepeer\.com\/live\/(.+)/.exec(streamUrl) ?? []
   return matches.length > 0 ? matches[1] : undefined
 }
 
@@ -59,17 +54,34 @@ export class API {
     })
   }
 
-  async getStream(id: string) {
+  async getStreamById(id: string) {
     const response = await this.http.get<Stream>(`/stream/${id}`)
-    return response.data
+    return response.status === 200 ? response.data : null
+  }
+
+  async getStreamByName(name: string) {
+    const filters = [{ id: 'name', value: name }]
+    const response = await this.http.get<Stream[]>(
+      `/stream?filters=${JSON.stringify(filters)}&limit=2`
+    )
+    if (response.status !== 200) {
+      return null
+    }
+    const streams = response.data
+    if (!streams?.length) {
+      console.warn(`No streams found with name ${name}`)
+      return null
+    } else if (streams.length > 1) {
+      console.warn(
+        `Found multiple streams with name ${name}: ${JSON.stringify(streams)}`
+      )
+      return null
+    }
+    return streams[0]
   }
 
   async createStream(name: string) {
-    const payload = {
-      name,
-      profiles: defaultProfiles,
-    }
-    const response = await this.http.post<Stream>('/stream', payload)
+    const response = await this.http.post<Stream>('/stream', { name })
     return response.data
   }
 }
