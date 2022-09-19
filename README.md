@@ -97,19 +97,19 @@ This is a good alternative if you're not willing to put your credit card
 information anywhere. It is slightly more expensive though if you don't want
 your apps sleeping automatically after a while without deploys.
 
-It also supports the Docker Compose syntax for deployment, which we do have in
-the root of the project. You will only need to add an `endpoints` config to
+It also supports the Docker Compose syntax for deployment, which we already have
+in the root of the project. You will only need to add an `endpoints` config to
 expose the service on the internet via HTTPS. Check [this
 commit](https://github.com/victorges/justcast.it/pull/42/commits/41f4f812e2e2f5b64d60b747385429b617d43786)
-for an example of when this app was deployed there.
+for an example.
 
 #### [Google Cloud Run](https://cloud.google.com/run)
 
-Google Cloud is actually a pretty good option as well and really easy to use.
-Although it might be a little more bureaucratic, you can also save a lot of
+Google Cloud Run is actually a pretty good option as well and really easy to
+use. Although it might be a little more bureaucratic, you can also save a lot of
 money on the infra bill since your app can automatically sleep when it's not in
 use. Follow [this](https://cloud.google.com/run/docs/deploying) for a quick
-guide.
+guide on deploying a container there.
 
 The biggest problem is that it doesn't run images from Docker Hub. So you'll
 need to push the images to the Google Container Registry and only then deploy it
@@ -119,7 +119,7 @@ answer](https://stackoverflow.com/a/66324319) for more details.
 ## Contact
 
 Feel free to open an issue to start a discussion or just chat on Discord
-(victorges#0420).
+([victorges#0420](https://discord.com/users/690243539787186261)).
 
 ## License
 
