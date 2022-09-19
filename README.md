@@ -52,7 +52,7 @@ accessible endpoint and with access to a Livepeer API key in the environment
 variables. It can even be the same one that you use for dev, but it's
 recommended to create a new one for production.
 
-The pre-built docker container is also publicly avaialble on Docker Hub in the
+The pre-built docker container is also publicly available on Docker Hub in the
 [`victorges/justcast.it`](https://hub.docker.com/repository/docker/victorges/justcast.it)
 repository.
 
@@ -76,12 +76,20 @@ endpoint. It also has a free tier, but you do need to set up a credit card on
 sign-up.
 
 Since we already have the configuration files for it, after configuring your
-`flyctl` CLI you can just run `flyctl apps create` to create an app (you'll
-choose or get a random app name) then:
+`flyctl` CLI:
 
-```bash
-flyctl deploy --config ops/fly.toml --app $YOUR_APP_NAME
-```
+- Create an app on your account (you'll choose or get a random app name):
+  ```bash
+  flyctl apps create
+  ```
+- Create a secret with your Livepeer API key:
+  ```bash
+  flyctl secrets set --app {{ your app name }} LIVEPEER_API_KEY={{ your API key }}
+  ```
+- Deploy the app:
+  ```bash
+  flyctl deploy --config ops/fly.toml --app $YOUR_APP_NAME
+  ```
 
 #### [Okteto](https://cloud.okteto.com/)
 
