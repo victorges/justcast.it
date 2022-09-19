@@ -88,7 +88,7 @@ Since we already have the configuration files for it, after configuring your
   ```
 - Deploy the app:
   ```bash
-  flyctl deploy --config ops/fly.toml --app $YOUR_APP_NAME
+  flyctl deploy --config ops/fly.toml --app {{ your app name }}
   ```
 
 #### [Okteto](https://cloud.okteto.com/)
