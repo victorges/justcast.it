@@ -1,0 +1,20 @@
+name: Deploy prod fly.io
+on:
+  workflow_run:
+    workflows: ["Publish Docker image"]
+    branches: [main]
+    types:
+      - completed
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+jobs:
+  deploy:
+      name: Deploy app to prod
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - uses: superfly/flyctl-actions/setup-flyctl@master
+        - name: fly (prod deploy)
+          run: |
+            export TAG=sha-${{ github.sha }}
+            yarn fly:prod

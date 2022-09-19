@@ -1,7 +1,6 @@
 import express from 'express'
 
-import streamstore from '../clients/streamstore'
-import { getOrCreateStream } from '../clients/streams'
+import { getOrCreateStream, getStreamByHumanId } from '../clients/streams'
 import { extractStreamKey } from '../clients/livepeer'
 import { streamIdCookieName } from './common'
 
@@ -9,7 +8,7 @@ const api = express.Router()
 
 api.get('/stream/:humanId', async (req, res) => {
   const id = req.params.humanId
-  const info = await streamstore.getByHumanId(id)
+  const info = await getStreamByHumanId(id)
   if (!info) {
     res.sendStatus(404)
     return

@@ -1,0 +1,15 @@
+services:
+  justserve-it:
+    build: .
+    scale: 1
+    environment:
+      - PORT=8080
+      - LIVEPEER_API_KEY=${LIVEPEER_API_KEY}
+    ports:
+     - 8080:8080
+    healthcheck:
+      start_period: 5s
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]

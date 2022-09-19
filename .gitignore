@@ -1,7 +1,5 @@
 # Custom
 .DS_Store
-secrets
-.secrets/*
 
 # Logs
 logs
@@ -111,5 +109,3 @@ dist
 public
 
 lib
-.gitsecret/keys/random_seed
-!*.secret
