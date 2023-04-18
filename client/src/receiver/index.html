@@ -5,33 +5,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <base href="/receiver/">
+    <base href="/receiver/" />
 
     <title>Just Cast It</title>
 
-    <link href="https://vjs.zencdn.net/7.18.1/video-js.css" rel="stylesheet" />
     <link href="index.css" rel="stylesheet" />
   </head>
   <body>
-    <video
-      id="video"
-      class="video-js vjs-default-skin"
-      controls
-      autoplay
-      muted
-      preload="auto"
-    >
-      <p class="vjs-no-js">
-        To view this video please enable JavaScript, and consider upgrading to a
-        web browser that
-        <a href="https://videojs.com/html5-video-support/" target="_blank">
-          supports HTML5 video
-        </a>
-      </p>
-    </video>
-    <script src="https://vjs.zencdn.net/7.18.1/video.min.js"></script>
-    <script src="https://unpkg.com/videojs-contrib-quality-levels@2.1.0/dist/videojs-contrib-quality-levels.min.js"></script>
-    <script src="https://unpkg.com/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.min.js"></script>
+    <iframe
+      id="iframe"
+      frameborder="0"
+      allowfullscreen
+      allow="autoplay; encrypted-media; picture-in-picture"
+      sandbox="allow-scripts"
+    ></iframe>
     <script src="bundle.js"></script>
   </body>
 </html>
