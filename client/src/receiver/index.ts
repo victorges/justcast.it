@@ -1,9 +1,6 @@
 const { body } = document
 
-const video = document.getElementById('video')
-
-// @ts-ignore
-const player = videojs(video)
+const iframe = document.getElementById('iframe') as HTMLIFrameElement
 
 // set background to transparent when inside iframe
 if (window.location !== window.parent.location) {
@@ -17,9 +14,6 @@ console.log('hostname', hostname)
 console.log('port', port)
 console.log('pathname', pathname)
 
-player.volume(1)
-player.controls(true)
-
 const humanId = pathname.substr(1)
 fetch(`/api/stream/${humanId}`)
   .then((res) => {
@@ -32,12 +26,5 @@ fetch(`/api/stream/${humanId}`)
     return { playbackUrl }
   })
   .then((info) => {
-    player.src({
-      src: info.playbackUrl,
-      type: 'application/x-mpegURL',
-      withCredentials: false,
-    })
-    player.hlsQualitySelector({
-      displayCurrentQuality: true,
-    })
+    iframe.src = `https://lvpr.tv/?v=${info.playbackId}`
   })
